@@ -28,6 +28,7 @@ import java.util.Set;
  * @author Egor Pasko
  */
 public class MethodTransformer extends AdviceAdapter {
+  private final Agent agent;
   private final String fullName;
   private final Label startFinally = new Label();
   private final MethodMapping methods;
@@ -46,9 +47,10 @@ public class MethodTransformer extends AdviceAdapter {
 
   private int line;
 
-  public MethodTransformer(MethodVisitor mv,
+  public MethodTransformer(Agent agent, MethodVisitor mv,
       int acc, String name, String fullName, String desc, String src, MethodMapping methods) {
     super(mv, acc, name, desc);
+    this.agent = agent;
     this.fullName = fullName;
     this.methods = methods;
     this.srcFile = src;
@@ -84,7 +86,7 @@ public class MethodTransformer extends AdviceAdapter {
   protected void onMethodEnter() {
     // TODO: this is a workaround to having not all <init>s in onMethodEnter(), needs fixing.
     if (!methodName.equals("<init>")) {
-      mv.visitLdcInsn(fullName + ":" + srcFile + ":" + line);
+      push(genCodePosition());
       captureMethodEnter();
     }
     if ((methodAccess & Opcodes.ACC_SYNCHRONIZED) != 0) {
@@ -144,17 +146,17 @@ public class MethodTransformer extends AdviceAdapter {
     }
     // TODO: this is a workaround to having not all <init>s in onMethodEnter(), needs fixing.
     if (!methodName.equals("<init>")) {
-      mv.visitLdcInsn(fullName + ":" + getFileLine());
+      push(genCodePosition());
       captureMethodExit();
     }
   }
 
-  private String getFileLine() {
-    return srcFile + ":" + line;
+  private long genCodePosition() {
+    return agent.incPC(fullName + " " + srcFile + " " + line);
   }
 
   private void visitObjectFieldAccess(String name, boolean isWrite) {
-    String pc = getFileLine();
+    long pc = genCodePosition();
     if (!isWrite) {
       dup();
       push(0);
@@ -202,7 +204,7 @@ public class MethodTransformer extends AdviceAdapter {
     mv.visitMethodInsn(INVOKESTATIC,
         "org/jtsan/EventListener",
         "objectFieldAccess",
-        "(Ljava/lang/Object;ZLjava/lang/String;Ljava/lang/String;)V");
+        "(Ljava/lang/Object;ZLjava/lang/String;J)V");
   }
 
   private void visitStaticFieldAccess(String fullName, boolean isWrite) {
@@ -212,11 +214,11 @@ public class MethodTransformer extends AdviceAdapter {
     // classloaders barely share stuff.
     push(fullName);
     push(isWrite);
-    push(getFileLine());
+    push(genCodePosition());
     mv.visitMethodInsn(INVOKESTATIC,
         "org/jtsan/EventListener",
         "staticFieldAccess",
-        "(Ljava/lang/String;ZLjava/lang/String;)V");
+        "(Ljava/lang/String;ZJ)V");
   }
 
   @Override
@@ -264,14 +266,14 @@ public class MethodTransformer extends AdviceAdapter {
     mv.visitMethodInsn(INVOKESTATIC,
         "org/jtsan/EventListener",
         "methodEnter",
-        "(Ljava/lang/String;)V");
+        "(J)V");
   }
 
   private void captureMethodExit() {
     mv.visitMethodInsn(INVOKESTATIC,
         "org/jtsan/EventListener",
         "methodExit",
-        "(Ljava/lang/String;)V");
+        "(J)V");
     if (methodName.equals("run")) {
       loadThis();
       mv.visitMethodInsn(INVOKESTATIC,

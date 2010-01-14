@@ -25,12 +25,16 @@ import java.io.PrintWriter;
 public class EventListener {
   public static PrintWriter out;
 
-  public static void methodEnter(String name) {
-    out.println("RTN_ENTER " + Thread.currentThread().getId() + " " + name + " 0 0");
+  public static void codePosition(long pc, String descr) {
+    out.println("PC_DESCR " + pc + " " + descr);
   }
 
-  public static void methodExit(String name) {
-    out.println("RTN_EXIT " + Thread.currentThread().getId() + " " + name + " 0 0");
+  public static void methodEnter(long pc) {
+    out.println("RTN_ENTER " + Thread.currentThread().getId() + " " + pc + " 0 0");
+  }
+
+  public static void methodExit(long pc) {
+    out.println("RTN_EXIT " + Thread.currentThread().getId() + " " + pc + " 0 0");
   }
 
   public static void runMethodExit(Object obj) {
@@ -39,26 +43,27 @@ public class EventListener {
     }
   }
 
-  public static void reportFieldAccess(boolean isWrite, long tid, String pc, int id) {
+  public static void reportFieldAccess(boolean isWrite, long tid, long pc, int id) {
     String acc = isWrite ? "WRITE " : "READ ";
     String strTid = Long.toString(tid);
     out.println(acc + strTid + " " + pc + " " + id + " 1");
   }
 
+  // TODO: deprecate fieldName.
   public static void objectFieldAccess(Object obj, boolean isWrite,
-      String fieldName, String pc) {
+      String fieldName, long pc) {
     reportFieldAccess(isWrite,
                       Thread.currentThread().getId(),
-                      fieldName + ":" + pc,
+                      pc,
                       System.identityHashCode(obj));
   }
 
-  public static void staticFieldAccess(String fieldName, boolean isWrite, String pc) {
+  public static void staticFieldAccess(String fieldName, boolean isWrite, long pc) {
     // Instead of taking 'unique' id of the class, take the id of the string representing it.
     // This is very dirty.
     reportFieldAccess(isWrite,
                       Thread.currentThread().getId(),
-                      fieldName + ":" + pc,
+                      pc,
                       System.identityHashCode(fieldName.intern()));
   }
 
@@ -110,6 +115,6 @@ public class EventListener {
 
   public static void jlThreadJoin(Thread thr) {
     out.println(
-        "THR_JOIN " + Thread.currentThread().getId() + " " + "pc" + thr.getId() + " 0");
+        "THR_JOIN " + Thread.currentThread().getId() + " pc " + thr.getId() + " 0");
   }
 }
