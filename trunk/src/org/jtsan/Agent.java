@@ -39,6 +39,10 @@ public class Agent implements ClassFileTransformer {
   // System methods to intercept.
   private static MethodMapping syncMethods = null;
 
+  private int pc;
+
+  private String lastDescr;
+
   public static void premain(String arg, Instrumentation instrumentation) {
     Agent agent = new Agent();
     instrumentation.addTransformer(agent, true);
@@ -81,7 +85,7 @@ public class Agent implements ClassFileTransformer {
       ClassReader cr = new ClassReader(bytes);
       ClassWriter cw = new ClassWriter(cr,
           ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
-      ca = newMethodTransformAdapter(cw, className);
+      ca = newMethodTransformAdapter(this, cw, className);
 
       cr.accept(ca, ClassReader.EXPAND_FRAMES);
       byte[] res = cw.toByteArray();
@@ -107,7 +111,8 @@ public class Agent implements ClassFileTransformer {
     map.register("java/lang/Thread", "join()V", "jlThreadJoin");
   }
 
-  private ClassAdapter newMethodTransformAdapter(ClassWriter cw, final String className) {
+  private ClassAdapter newMethodTransformAdapter(
+      final Agent myself, ClassWriter cw, final String className) {
     return new ClassAdapter(cw) {
       private String source;
 
@@ -125,7 +130,7 @@ public class Agent implements ClassFileTransformer {
         String fullMethodName = className + "." + name + signatureStr;
         LocalVariablesSorter sorter = new LocalVariablesSorter(access, desc, mv);
         MethodTransformer transformer = new MethodTransformer(
-            sorter, access, name, fullMethodName, desc, source, syncMethods);
+            myself, sorter, access, name, fullMethodName, desc, source, syncMethods);
         AnalyzerAdapter aa = new AnalyzerAdapter(className, access, name, desc, transformer);
         transformer.setLocalVarsSorter(sorter);
         transformer.setStackAnalyzer(aa);
@@ -144,5 +149,15 @@ public class Agent implements ClassFileTransformer {
       cr.accept(new TraceClassVisitor(new PrintWriter(System.out)),
                 TraceClassVisitor.getDefaultAttributes(),
                 0);
+  }
+
+  public synchronized long incPC(String descr) {
+    if (descr.equals(lastDescr)) {
+      return pc;
+    }else{
+      lastDescr = descr;
+      EventListener.codePosition(pc++, descr);
+      return pc;
+    }
   }
 }
