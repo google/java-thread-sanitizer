@@ -1,0 +1,55 @@
+<!--
+Copyright 2010 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<project name="Java Race Detector" default="all">
+  <target name="all" depends="compile,jar"/>
+
+  <target name="compile" description="compile classes">
+    <delete dir="bin" />
+    <mkdir dir="bin" />
+    <javac srcdir="src" destdir="bin" classpath="deps/asm-3.2/lib/all/asm-all-3.2.jar" >
+      <compilerarg value="-Xlint"/>
+    </javac>
+  </target>
+
+  <target name="jar" depends="compile" description="create agent jar">
+    <delete dir="dist" />
+    <mkdir dir="dist" />
+    <jar basedir="bin" destfile="dist/agent.jar" manifest="manifest.mf"/>
+  </target>
+
+  <target name="download">
+    <mkdir dir="deps" />
+    <get verbose="true" usetimestamp="true"
+      src="http://download.forge.objectweb.org/asm/asm-3.2-bin.zip"
+      dest="deps/asm-3.2-bin.zip" />
+    <checksum file="deps/asm-3.2-bin.zip" property="asmMD5" />
+    <condition property="asmMD5ok" value="true" >
+      <equals arg1="${asmMD5}" arg2="ad95824b9aedfa5b59b096b01f5c5921" />
+    </condition>
+    <fail unless="asmMD5ok" >
+File deps/asm-3.2-bin.zip has incorrect md5sum.
+    </fail>
+    <echo>Checksum verified.</echo>
+    <delete dir="deps/asm-3.2" />
+    <unzip src="deps/asm-3.2-bin.zip" dest="deps" />
+  </target>
+
+  <target name="clean">
+    <delete dir="deps" />
+    <delete dir="dist" />
+    <delete dir="bin" />
+  </target>
+</project>
