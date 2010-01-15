@@ -91,6 +91,7 @@ public class MethodTransformer extends AdviceAdapter {
     }
     if ((methodAccess & Opcodes.ACC_SYNCHRONIZED) != 0) {
       loadThis();
+      push(genCodePosition());
       captureMonitorEnter();
     }
   }
@@ -116,9 +117,11 @@ public class MethodTransformer extends AdviceAdapter {
   public void visitInsn(final int opcode) {
     if (opcode == MONITORENTER) {
       dup();
+      push(genCodePosition());
       captureMonitorEnter();
     } else if (opcode == MONITOREXIT) {
       dup();
+      push(genCodePosition());
       captureMonitorExit();
     } else if (isArrayStore(opcode)) {
       captureArrayStore(opcode);
@@ -142,6 +145,7 @@ public class MethodTransformer extends AdviceAdapter {
   private void onFinally() {
     if ((methodAccess & Opcodes.ACC_SYNCHRONIZED) != 0) {
       loadThis();
+      push(genCodePosition());
       captureMonitorExit();
     }
     // TODO: this is a workaround to having not all <init>s in onMethodEnter(), needs fixing.
@@ -252,14 +256,14 @@ public class MethodTransformer extends AdviceAdapter {
     mv.visitMethodInsn(INVOKESTATIC,
         "org/jtsan/EventListener",
         "monitorExit",
-        "(Ljava/lang/Object;)V");
+        "(Ljava/lang/Object;J)V");
   }
 
   private void captureMonitorEnter() {
     mv.visitMethodInsn(INVOKESTATIC,
         "org/jtsan/EventListener",
         "monitorEnter",
-        "(Ljava/lang/Object;)V");
+        "(Ljava/lang/Object;J)V");
   }
 
   private void captureMethodEnter() {

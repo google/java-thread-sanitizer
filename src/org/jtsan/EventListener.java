@@ -71,13 +71,13 @@ public class EventListener {
                       System.identityHashCode(fieldName.intern()));
   }
 
-  public static void monitorEnter(Object obj) {
-    out.println("LOCK " + Thread.currentThread().getId() + " " + "pc" + " " +
+  public static void monitorEnter(Object obj, long pc) {
+    out.println("LOCK " + Thread.currentThread().getId() + " " + pc + " " +
         System.identityHashCode(obj) + " 0");
   }
 
-  public static void monitorExit(Object obj) {
-    out.println("UNLOCK " + Thread.currentThread().getId() + " " + "pc" + " " +
+  public static void monitorExit(Object obj, long pc) {
+    out.println("UNLOCK " + Thread.currentThread().getId() + " " + pc + " " +
         System.identityHashCode(obj) + " 0");
   }
 
