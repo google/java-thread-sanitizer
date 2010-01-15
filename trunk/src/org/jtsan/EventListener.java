@@ -29,6 +29,10 @@ public class EventListener {
     out.println("PC_DESCR " + pc + " " + descr);
   }
 
+  public static void beforeCall(long pc) {
+    out.println("RTN_CALL " + Thread.currentThread().getId() + " " + pc + " 0 0");
+  }
+
   public static void methodEnter(long pc) {
     out.println("RTN_ENTER " + Thread.currentThread().getId() + " " + pc + " 0 0");
   }
