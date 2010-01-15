@@ -77,8 +77,9 @@ public class EventListener {
   }
 
   public static void monitorEnter(Object obj, long pc) {
-    out.println("LOCK " + tid() + " " + pc + " " +
+    out.println("LOCK_BEFORE " + tid() + " " + pc + " " +
         System.identityHashCode(obj) + " 0");
+    out.println("WRITER_LOCK " + tid() + " " + pc + " 0 0");
   }
 
   public static void monitorExit(Object obj, long pc) {
