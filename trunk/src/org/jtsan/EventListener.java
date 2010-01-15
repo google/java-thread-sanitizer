@@ -26,7 +26,7 @@ public class EventListener {
   public static PrintWriter out;
 
   public static void codePosition(long pc, String descr) {
-    out.println("PC_DESCR " + pc + " " + descr);
+    out.println("#PC " + pc + " java " + descr);
   }
 
   public static void beforeCall(long pc) {
