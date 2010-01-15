@@ -25,25 +25,30 @@ import java.io.PrintWriter;
 public class EventListener {
   public static PrintWriter out;
 
+  public static long tid() {
+    return Thread.currentThread().getId() - 1;
+  }
+
   public static void codePosition(long pc, String descr) {
     out.println("#PC " + pc + " java " + descr);
   }
 
   public static void beforeCall(long pc) {
-    out.println("RTN_CALL " + Thread.currentThread().getId() + " " + pc + " 0 0");
+    out.println("SBLOCK_ENTER " + tid() + " " + pc + " 0 0");
   }
 
   public static void methodEnter(long pc) {
-    out.println("RTN_ENTER " + Thread.currentThread().getId() + " " + pc + " 0 0");
+    out.println("RTN_CALL " + tid() + " 0 456 0");
+    out.println("SBLOCK_ENTER " + tid() + " " + pc + " 0 0");
   }
 
   public static void methodExit(long pc) {
-    out.println("RTN_EXIT " + Thread.currentThread().getId() + " " + pc + " 0 0");
+    out.println("RTN_EXIT " + tid() + " " + pc + " 0 0");
   }
 
   public static void runMethodExit(Object obj, long pc) {
     if (obj instanceof Thread) {
-      out.println("THR_END " + Thread.currentThread().getId() + " " + pc + " 0 0");
+      out.println("THR_END " + tid() + " " + pc + " 0 0");
     }
   }
 
@@ -57,7 +62,7 @@ public class EventListener {
   public static void objectFieldAccess(Object obj, boolean isWrite,
       String fieldName, long pc) {
     reportFieldAccess(isWrite,
-                      Thread.currentThread().getId(),
+                      tid(),
                       pc,
                       System.identityHashCode(obj));
   }
@@ -66,18 +71,18 @@ public class EventListener {
     // Instead of taking 'unique' id of the class, take the id of the string representing it.
     // This is very dirty.
     reportFieldAccess(isWrite,
-                      Thread.currentThread().getId(),
+                      tid(),
                       pc,
                       System.identityHashCode(fieldName.intern()));
   }
 
   public static void monitorEnter(Object obj, long pc) {
-    out.println("LOCK " + Thread.currentThread().getId() + " " + pc + " " +
+    out.println("LOCK " + tid() + " " + pc + " " +
         System.identityHashCode(obj) + " 0");
   }
 
   public static void monitorExit(Object obj, long pc) {
-    out.println("UNLOCK " + Thread.currentThread().getId() + " " + pc + " " +
+    out.println("UNLOCK " + tid() + " " + pc + " " +
         System.identityHashCode(obj) + " 0");
   }
 
@@ -90,12 +95,12 @@ public class EventListener {
   }
 
   public static void jlObjectWait(Object obj, long pc) {
-    out.println("WAIT "  + Thread.currentThread().getId() + " " + pc + " " +
+    out.println("WAIT "  + tid() + " " + pc + " " +
         System.identityHashCode(obj) + " 0");
   }
 
   public static void jlObjectNotify(Object obj, long pc) {
-    out.println("SIGNAL " + Thread.currentThread().getId() + " " + pc + " " +
+    out.println("SIGNAL " + tid() + " " + pc + " " +
         System.identityHashCode(obj) + " 0");
   }
 
@@ -112,13 +117,18 @@ public class EventListener {
   }
 
   public static void jlThreadStart(Thread thr, long pc) {
-    long tid = Thread.currentThread().getId();
-    out.println("THR_CREATE " + tid + " " + pc + " " + thr.getId() + " 0");
-    out.println("THR_START " + thr.getId() + " " + pc + " 0 0");
+    long parent_tid = tid();
+    long child_tid = thr.getId() - 1;
+    out.println("THR_START " + child_tid + " " + pc + " 0 " + parent_tid);
+    out.println("THR_FIRST_INSN " + child_tid + " " + pc + " 0 0");
+    out.println("THR_SET_PTID " + child_tid + " " + pc + " " + child_tid + " 0");
   }
 
   public static void jlThreadJoin(Thread thr, long pc) {
-    out.println(
-        "THR_JOIN " + Thread.currentThread().getId() + " " + pc + " " + thr.getId() + " 0");
+    long parent_tid = tid();
+    long child_tid = thr.getId() - 1;
+    out.println("THR_END " + child_tid + " " + pc + " 0 0");
+    out.println("THR_JOIN_BEFORE " + parent_tid + " " + pc + " " + child_tid + " 0");
+    out.println("THR_JOIN_AFTER " + parent_tid + " " + pc + " " + child_tid + " 0");
   }
 }
