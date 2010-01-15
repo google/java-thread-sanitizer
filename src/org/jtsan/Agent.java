@@ -56,6 +56,8 @@ public class Agent implements ClassFileTransformer {
     try {
       EventListener.out = new PrintWriter(
           new FileWriter(fname, false /* append */), true /* auto flush */);
+      EventListener.out.println("THR_START 0 0 0 0");
+      EventListener.out.println("THR_FIRST_INSN 0 0 0 0");
       System.err.println("Java Agent: appending threading events to file: " + fname);
     } catch (IOException e) {
       System.err.println("Exception while opening file: " + fname + ", reason: " + e);
