@@ -320,10 +320,20 @@ public class MethodTransformer extends AdviceAdapter {
   public void visitMethodInsn(int opcode, String owner, String name, String desc) {
     String fullMethodName = name + desc;
     String targetName = methods.getTargetFor(owner, fullMethodName);
+    // Capture code position on the call.
+    push(genCodePosition());
+    mv.visitMethodInsn(INVOKESTATIC,
+                       "org/jtsan/EventListener",
+                       "beforeCall",
+                       "(J)V");
+
+    // Proceed an ordinary call without extra instrumentation.
     if (targetName == null || opcode == Opcodes.INVOKESPECIAL) {
       mv.visitMethodInsn(opcode, owner, name, desc);
       return;
     }
+
+    // Capture special (=registered) calls with their parameters.
     // TODO: should be renamed to MethodParamsSaver.
     LocalVarsSaver saver = new LocalVarsSaver(mv, fullMethodName, localVarsSorter);
     if (opcode == Opcodes.INVOKESTATIC) {
