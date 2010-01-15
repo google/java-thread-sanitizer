@@ -33,6 +33,8 @@ import java.io.PrintWriter;
  */
 public class Agent implements ClassFileTransformer {
 
+  private static final String LOGFILE_PREFIX = "logfile=";
+
   // Ignore list to eliminate endless recursion.
   private static String[] ignore = new String[] { "java", "sun/", "org/jtsan" };
 
@@ -48,14 +50,27 @@ public class Agent implements ClassFileTransformer {
     instrumentation.addTransformer(agent, true);
     syncMethods = new MethodMapping();
     initSyncMethodMappings(syncMethods);
+
     // TODO:
     //   load all java/lang and java/util classes that the instrumenter will be using
     //     (no transforming)
     //   retransform all loaded java/lang and java/util classes
+
     String fname = "jtsan.log";
+    String[] args = arg.split(":");
+    for (int i = 0; i < args.length; i++) {
+      int idx = args[i].lastIndexOf(LOGFILE_PREFIX);
+      if (idx != -1) {
+        fname = args[i].substring(idx + LOGFILE_PREFIX.length());
+      }
+    }
     try {
-      EventListener.out = new PrintWriter(
-          new FileWriter(fname, false /* append */), true /* auto flush */);
+      if (fname.equals("-")) {
+        EventListener.out = new PrintWriter(System.out);
+      } else {
+        EventListener.out = new PrintWriter(
+            new FileWriter(fname, false /* append */), true /* auto flush */);
+      }
       EventListener.out.println("THR_START 0 0 0 0");
       EventListener.out.println("THR_FIRST_INSN 0 0 0 0");
       System.err.println("Java Agent: appending threading events to file: " + fname);
