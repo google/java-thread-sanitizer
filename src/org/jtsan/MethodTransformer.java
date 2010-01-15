@@ -280,10 +280,11 @@ public class MethodTransformer extends AdviceAdapter {
         "(J)V");
     if (methodName.equals("run")) {
       loadThis();
+      push(genCodePosition());
       mv.visitMethodInsn(INVOKESTATIC,
           "org/jtsan/EventListener",
           "runMethodExit",
-          "(Ljava/lang/Object;)V");
+          "(Ljava/lang/Object;J)V");
     }
   }
 
@@ -342,20 +343,22 @@ public class MethodTransformer extends AdviceAdapter {
     LocalVarsSaver saver = new LocalVarsSaver(mv, fullMethodName, localVarsSorter);
     if (opcode == Opcodes.INVOKESTATIC) {
       saver.saveAndLoadStack();
+      push(genCodePosition());
       mv.visitMethodInsn(INVOKESTATIC,
                          "org/jtsan/EventListener",
                          targetName,
-                         desc);
+                         desc.replace(")", "J)"));
       saver.loadStack();
       mv.visitMethodInsn(opcode, owner, name, desc);
     } else {
       saver.saveStack();
       dup(); // Dup 'this' reference for the call.
       saver.loadStack();
+      push(genCodePosition());
       mv.visitMethodInsn(INVOKESTATIC,
                          "org/jtsan/EventListener",
                          targetName,
-                         addClassAsFirstArgument(owner, desc));
+                         addClassAsFirstArgument(owner, desc).replace(")", "J)"));
       saver.loadStack();
       mv.visitMethodInsn(opcode, owner, name, desc);
     }
