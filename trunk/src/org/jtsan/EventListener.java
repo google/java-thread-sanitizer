@@ -41,9 +41,9 @@ public class EventListener {
     out.println("RTN_EXIT " + Thread.currentThread().getId() + " " + pc + " 0 0");
   }
 
-  public static void runMethodExit(Object obj) {
+  public static void runMethodExit(Object obj, long pc) {
     if (obj instanceof Thread) {
-      out.println("THR_END " + Thread.currentThread().getId() + " " + "pc" + " 0 0");
+      out.println("THR_END " + Thread.currentThread().getId() + " " + pc + " 0 0");
     }
   }
 
@@ -89,18 +89,18 @@ public class EventListener {
     //out.println("arrayStore idx: " + index + ", hash: " + System.identityHashCode(array));
   }
 
-  public static void jlObjectWait(Object obj) {
-    out.println("WAIT "  + Thread.currentThread().getId() + " " + "pc" + " " +
+  public static void jlObjectWait(Object obj, long pc) {
+    out.println("WAIT "  + Thread.currentThread().getId() + " " + pc + " " +
         System.identityHashCode(obj) + " 0");
   }
 
-  public static void jlObjectNotify(Object obj) {
-    out.println("SIGNAL " + Thread.currentThread().getId() + " " + "pc" + " " +
+  public static void jlObjectNotify(Object obj, long pc) {
+    out.println("SIGNAL " + Thread.currentThread().getId() + " " + pc + " " +
         System.identityHashCode(obj) + " 0");
   }
 
   public static void jlSystemArrayCopy(
-      Object src, int srcPos, Object dest, int destPos, int length) {
+      Object src, int srcPos, Object dest, int destPos, int length, long pc) {
     /*
     out.printf("System.arraycopy(src %d, srcPos %d, dest %d, destPos %d, length %d)\n",
                       System.identityHashCode(src),
@@ -111,14 +111,14 @@ public class EventListener {
                       */
   }
 
-  public static void jlThreadStart(Thread thr) {
+  public static void jlThreadStart(Thread thr, long pc) {
     long tid = Thread.currentThread().getId();
-    out.println("THR_CREATE " + tid + " " + "pc" + " " + thr.getId() + " 0");
-    out.println("THR_START " + thr.getId() + " " + "pc" + " 0 0");
+    out.println("THR_CREATE " + tid + " " + pc + " " + thr.getId() + " 0");
+    out.println("THR_START " + thr.getId() + " " + pc + " 0 0");
   }
 
-  public static void jlThreadJoin(Thread thr) {
+  public static void jlThreadJoin(Thread thr, long pc) {
     out.println(
-        "THR_JOIN " + Thread.currentThread().getId() + " pc " + thr.getId() + " 0");
+        "THR_JOIN " + Thread.currentThread().getId() + " " + pc + " " + thr.getId() + " 0");
   }
 }
