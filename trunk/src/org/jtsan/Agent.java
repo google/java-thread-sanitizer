@@ -57,11 +57,13 @@ public class Agent implements ClassFileTransformer {
     //   retransform all loaded java/lang and java/util classes
 
     String fname = "jtsan.log";
-    String[] args = arg.split(":");
-    for (int i = 0; i < args.length; i++) {
-      int idx = args[i].lastIndexOf(LOGFILE_PREFIX);
-      if (idx != -1) {
-        fname = args[i].substring(idx + LOGFILE_PREFIX.length());
+    if (arg != null) {
+      String[] args = arg.split(":");
+      for (int i = 0; i < args.length; i++) {
+        int idx = args[i].lastIndexOf(LOGFILE_PREFIX);
+        if (idx != -1) {
+          fname = args[i].substring(idx + LOGFILE_PREFIX.length());
+        }
       }
     }
     try {
