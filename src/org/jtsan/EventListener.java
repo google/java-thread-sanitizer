@@ -96,8 +96,9 @@ public class EventListener {
   }
 
   public static void jlObjectWait(Object obj, long pc) {
-    out.println("WAIT "  + tid() + " " + pc + " " +
+    out.println("WAIT_BEFORE "  + tid() + " " + pc + " " +
         System.identityHashCode(obj) + " 0");
+    out.println("WAIT_AFTER "  + tid() + " " + pc + " 0 0");
   }
 
   public static void jlObjectNotify(Object obj, long pc) {
