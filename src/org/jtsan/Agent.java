@@ -41,9 +41,7 @@ public class Agent implements ClassFileTransformer {
   // System methods to intercept.
   private static MethodMapping syncMethods = null;
 
-  private int pc;
-
-  private String lastDescr;
+  private final CodePos codePos = new CodePos();
 
   public static void premain(String arg, Instrumentation instrumentation) {
     Agent agent = new Agent();
@@ -104,12 +102,17 @@ public class Agent implements ClassFileTransformer {
       ClassReader cr = new ClassReader(bytes);
       ClassWriter cw = new ClassWriter(cr,
           ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
-      ca = newMethodTransformAdapter(this, cw, className);
 
-      cr.accept(ca, ClassReader.EXPAND_FRAMES);
-      byte[] res = cw.toByteArray();
-      if (className.startsWith("Hello")) {
-        //printTransformedClass(res);
+      byte[] res;
+      // Allow no more than a single instrumentation at a time to making code
+      // positions sequential and non-conflicting.
+      synchronized(this) {
+        ca = newMethodTransformAdapter(this, cw, className, codePos);
+        cr.accept(ca, ClassReader.EXPAND_FRAMES);
+        res = cw.toByteArray();
+        if (className.startsWith("Hello")) {
+          //printTransformedClass(res);
+        }
       }
       return res;
     } catch (Exception e) {
@@ -131,7 +134,7 @@ public class Agent implements ClassFileTransformer {
   }
 
   private ClassAdapter newMethodTransformAdapter(
-      final Agent myself, ClassWriter cw, final String className) {
+      final Agent myself, ClassWriter cw, final String className, final CodePos codePos) {
     return new ClassAdapter(cw) {
       private String source;
 
@@ -149,7 +152,7 @@ public class Agent implements ClassFileTransformer {
         String fullMethodName = className + "." + name + signatureStr;
         LocalVariablesSorter sorter = new LocalVariablesSorter(access, desc, mv);
         MethodTransformer transformer = new MethodTransformer(
-            myself, sorter, access, name, fullMethodName, desc, source, syncMethods);
+            myself, sorter, access, name, fullMethodName, desc, source, syncMethods, codePos);
         AnalyzerAdapter aa = new AnalyzerAdapter(className, access, name, desc, transformer);
         transformer.setLocalVarsSorter(sorter);
         transformer.setStackAnalyzer(aa);
@@ -170,13 +173,4 @@ public class Agent implements ClassFileTransformer {
                 0);
   }
 
-  public synchronized long incPC(String descr) {
-    if (descr.equals(lastDescr)) {
-      return pc;
-    }else{
-      lastDescr = descr;
-      EventListener.codePosition(pc, descr);
-      return pc++;
-    }
-  }
 }
