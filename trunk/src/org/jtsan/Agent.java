@@ -175,8 +175,8 @@ public class Agent implements ClassFileTransformer {
       return pc;
     }else{
       lastDescr = descr;
-      EventListener.codePosition(pc++, descr);
-      return pc;
+      EventListener.codePosition(pc, descr);
+      return pc++;
     }
   }
 }
