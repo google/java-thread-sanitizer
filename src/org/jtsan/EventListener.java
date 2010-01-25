@@ -38,7 +38,7 @@ public class EventListener {
   }
 
   public static void methodEnter(long pc) {
-    out.println("RTN_CALL " + tid() + " 0 456 0");
+    out.println("RTN_CALL " + tid() + " 0 0 0");
     out.println("SBLOCK_ENTER " + tid() + " " + pc + " 0 0");
   }
 
@@ -48,7 +48,7 @@ public class EventListener {
 
   public static void runMethodExit(Object obj, long pc) {
     if (obj instanceof Thread) {
-      out.println("THR_END " + tid() + " " + pc + " 0 0");
+      // out.println("THR_END " + tid() + " " + pc + " 0 0");
     }
   }
 
