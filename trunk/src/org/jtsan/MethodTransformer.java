@@ -34,6 +34,8 @@ public class MethodTransformer extends AdviceAdapter {
   private final MethodMapping methods;
   private final String srcFile;
   private final String methodName;
+  private final CodePos codePos;
+  private final DescrCallback lazyDescr;
 
   private static final int[] storeOpcodes =
     {IASTORE, LASTORE, FASTORE, DASTORE, AASTORE, BASTORE, CASTORE, SASTORE};
@@ -48,13 +50,16 @@ public class MethodTransformer extends AdviceAdapter {
   private int line;
 
   public MethodTransformer(Agent agent, MethodVisitor mv,
-      int acc, String name, String fullName, String desc, String src, MethodMapping methods) {
+      int acc, String name, String fullName, String desc, String src, MethodMapping methods,
+      CodePos codePos) {
     super(mv, acc, name, desc);
     this.agent = agent;
     this.fullName = fullName;
     this.methods = methods;
     this.srcFile = src;
     this.methodName = name;
+    this.codePos = codePos;
+    lazyDescr = new DescrCallback();
   }
 
   public void setLocalVarsSorter(LocalVariablesSorter lvs) {
@@ -86,12 +91,12 @@ public class MethodTransformer extends AdviceAdapter {
   protected void onMethodEnter() {
     // TODO: this is a workaround to having not all <init>s in onMethodEnter(), needs fixing.
     if (!methodName.equals("<init>")) {
-      push(genCodePosition());
+      push(codePos.incMethodEnterPC());
       captureMethodEnter();
     }
     if ((methodAccess & Opcodes.ACC_SYNCHRONIZED) != 0) {
       loadThis();
-      push(genCodePosition());
+      push(codePos.incMethodEnterPC());
       captureMonitorEnter();
     }
   }
@@ -140,6 +145,7 @@ public class MethodTransformer extends AdviceAdapter {
   @Override
   public void visitLineNumber(int line, Label start) {
     this.line = line;
+    codePos.line(line, lazyDescr);
   }
 
   private void onFinally() {
@@ -155,8 +161,12 @@ public class MethodTransformer extends AdviceAdapter {
     }
   }
 
+  class DescrCallback {
+    public String getDescr() { return fullName + " " + srcFile + " " + line; }
+  }
+
   private long genCodePosition() {
-    return agent.incPC(fullName + " " + srcFile + " " + line);
+    return codePos.incPC(lazyDescr);
   }
 
   private void visitObjectFieldAccess(String name, boolean isWrite) {
