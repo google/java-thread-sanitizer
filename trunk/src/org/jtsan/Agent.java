@@ -66,7 +66,7 @@ public class Agent implements ClassFileTransformer {
     }
     try {
       if (fname.equals("-")) {
-        EventListener.out = new PrintWriter(System.out);
+        EventListener.out = new PrintWriter(System.out, true /* auto flush */);
       } else {
         EventListener.out = new PrintWriter(
             new FileWriter(fname, false /* append */), true /* auto flush */);
