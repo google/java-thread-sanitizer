@@ -54,9 +54,18 @@ public class EventListener {
 
   public static void reportFieldAccess(
       boolean isWrite, long tid, long pc, int id, boolean isVolatile) {
-    String acc = isWrite ? "WRITE " : "READ ";
     String strTid = Long.toString(tid);
-    out.println(acc + strTid + " " + pc + " " + id + " 1");
+    if (isVolatile) {
+      if (isWrite) {
+        out.println("SIGNAL " + strTid + " " + pc + " " + id + " 0");
+      } else {
+        out.println("WAIT_BEFORE " + strTid + " " + pc + " " + id + " 0");
+        out.println("WAIT_AFTER " + strTid + " " + pc + " " + "0 0");
+      }
+    } else {
+      String acc = isWrite ? "WRITE " : "READ ";
+      out.println(acc + strTid + " " + pc + " " + id + " 1");
+    }
   }
 
   public static void objectFieldAccess(Object obj, boolean isWrite,
