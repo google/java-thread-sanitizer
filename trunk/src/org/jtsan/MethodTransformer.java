@@ -18,7 +18,6 @@ package org.jtsan;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.*;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -36,6 +35,7 @@ public class MethodTransformer extends AdviceAdapter {
   private final String methodName;
   private final CodePos codePos;
   private final DescrCallback lazyDescr;
+  private final Set<String> volatileFields;
 
   private static final int[] storeOpcodes =
     {IASTORE, LASTORE, FASTORE, DASTORE, AASTORE, BASTORE, CASTORE, SASTORE};
@@ -51,7 +51,7 @@ public class MethodTransformer extends AdviceAdapter {
 
   public MethodTransformer(Agent agent, MethodVisitor mv,
       int acc, String name, String fullName, String desc, String src, MethodMapping methods,
-      CodePos codePos) {
+      CodePos codePos, Set<String> volatileFields) {
     super(mv, acc, name, desc);
     this.agent = agent;
     this.fullName = fullName;
@@ -59,6 +59,7 @@ public class MethodTransformer extends AdviceAdapter {
     this.srcFile = src;
     this.methodName = name;
     this.codePos = codePos;
+    this.volatileFields = volatileFields;
     lazyDescr = new DescrCallback();
   }
 
@@ -169,13 +170,18 @@ public class MethodTransformer extends AdviceAdapter {
     return codePos.incPC(lazyDescr);
   }
 
-  private void visitObjectFieldAccess(String name, boolean isWrite) {
+  private boolean isVolatileField(String fname) {
+    return volatileFields.contains(fname);
+  }
+
+  private void visitObjectFieldAccess(String name, boolean isWrite, boolean isVolatile) {
     long pc = genCodePosition();
     if (!isWrite) {
       dup();
       push(0);
       push(name);
       push(pc);
+      push(isVolatile);
       visitObjectFieldAccessCall();
     } else {
       List stack = stackAnalyzer.stack;
@@ -193,6 +199,7 @@ public class MethodTransformer extends AdviceAdapter {
         push(1);
         push(name);
         push(pc);
+        push(isVolatile);
         visitObjectFieldAccessCall();
         mv.visitVarInsn(ILOAD, storedVar);
       } else if (slot instanceof String) {
@@ -204,6 +211,7 @@ public class MethodTransformer extends AdviceAdapter {
         push(1);
         push(name);
         push(pc);
+        push(isVolatile);
         visitObjectFieldAccessCall();
         mv.visitVarInsn(ALOAD, storedVar);
       }
@@ -218,7 +226,7 @@ public class MethodTransformer extends AdviceAdapter {
     mv.visitMethodInsn(INVOKESTATIC,
         "org/jtsan/EventListener",
         "objectFieldAccess",
-        "(Ljava/lang/Object;ZLjava/lang/String;J)V");
+        "(Ljava/lang/Object;ZLjava/lang/String;JZ)V");
   }
 
   private void visitStaticFieldAccess(String fullName, boolean isWrite) {
@@ -229,10 +237,11 @@ public class MethodTransformer extends AdviceAdapter {
     push(fullName);
     push(isWrite);
     push(genCodePosition());
+    push(isVolatileField(fullName));
     mv.visitMethodInsn(INVOKESTATIC,
         "org/jtsan/EventListener",
         "staticFieldAccess",
-        "(Ljava/lang/String;ZJ)V");
+        "(Ljava/lang/String;ZJZ)V");
   }
 
   @Override
@@ -257,7 +266,7 @@ public class MethodTransformer extends AdviceAdapter {
     if (isStatic) {
       visitStaticFieldAccess(owner + "." + name, isWrite);
     } else {
-      visitObjectFieldAccess(name, isWrite);
+      visitObjectFieldAccess(name, isWrite, isVolatileField(owner + "." + name));
     }
     super.visitFieldInsn(opcode, owner, name, desc);
   }

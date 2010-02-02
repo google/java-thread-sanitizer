@@ -52,28 +52,31 @@ public class EventListener {
     }
   }
 
-  public static void reportFieldAccess(boolean isWrite, long tid, long pc, int id) {
+  public static void reportFieldAccess(
+      boolean isWrite, long tid, long pc, int id, boolean isVolatile) {
     String acc = isWrite ? "WRITE " : "READ ";
     String strTid = Long.toString(tid);
     out.println(acc + strTid + " " + pc + " " + id + " 1");
   }
 
-  // TODO: deprecate fieldName.
   public static void objectFieldAccess(Object obj, boolean isWrite,
-      String fieldName, long pc) {
+      String fieldName, long pc, boolean isVolatile) {
     reportFieldAccess(isWrite,
                       tid(),
                       pc,
-                      System.identityHashCode(obj));
+                      System.identityHashCode(obj),
+                      isVolatile);
   }
 
-  public static void staticFieldAccess(String fieldName, boolean isWrite, long pc) {
+  public static void staticFieldAccess(
+      String fieldName, boolean isWrite, long pc, boolean isVolatile) {
     // Instead of taking 'unique' id of the class, take the id of the string representing it.
     // This is very dirty.
     reportFieldAccess(isWrite,
                       tid(),
                       pc,
-                      System.identityHashCode(fieldName.intern()));
+                      System.identityHashCode(fieldName.intern()),
+                      isVolatile);
   }
 
   public static void monitorEnter(Object obj, long pc) {

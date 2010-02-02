@@ -24,6 +24,8 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Instruments all method bodies to intercept events: method entry, method exit, memory accesses,
@@ -138,6 +140,8 @@ public class Agent implements ClassFileTransformer {
     return new ClassAdapter(cw) {
       private String source;
 
+      private final Set<String> volatileFields = new HashSet<String>();
+
       /*
        * Compose a chain of visitors:
        *   AnalyzerAdapter -> MethodTransformer -> LocalVariablesSorter -> MethodVisitor
@@ -152,7 +156,8 @@ public class Agent implements ClassFileTransformer {
         String fullMethodName = className + "." + name + signatureStr;
         LocalVariablesSorter sorter = new LocalVariablesSorter(access, desc, mv);
         MethodTransformer transformer = new MethodTransformer(
-            myself, sorter, access, name, fullMethodName, desc, source, syncMethods, codePos);
+            myself, sorter, access, name, fullMethodName, desc, source, syncMethods, codePos,
+            volatileFields);
         AnalyzerAdapter aa = new AnalyzerAdapter(className, access, name, desc, transformer);
         transformer.setLocalVarsSorter(sorter);
         transformer.setStackAnalyzer(aa);
@@ -162,6 +167,15 @@ public class Agent implements ClassFileTransformer {
       @Override
       public void visitSource(String source, String debug) {
         this.source = source;
+      }
+
+      @Override
+      public FieldVisitor visitField(
+          int access, String name, String desc, String signature, Object value) {
+        if ((access & Opcodes.ACC_VOLATILE) != 0) {
+          volatileFields.add(className + "." + name);
+        }
+        return super.visitField(access, name, desc, signature, value);
       }
     };
   }
