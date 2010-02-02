@@ -34,7 +34,7 @@ class CodePos {
   public long incPC(MethodTransformer.DescrCallback cb) {
     String descr = cb.getDescr();
     if (descr.equals(lastDescr)) {
-      return pc;
+      return pc - 1;
     }else{
       lastDescr = descr;
       EventListener.codePosition(pc, descr);
