@@ -135,14 +135,12 @@ public class EventListener {
     long child_tid = thr.getId() - 1;
     out.println("THR_START " + child_tid + " " + pc + " 0 " + parent_tid);
     out.println("THR_FIRST_INSN " + child_tid + " " + pc + " 0 0");
-    out.println("THR_SET_PTID " + child_tid + " " + pc + " " + child_tid + " 0");
   }
 
   public static void jlThreadJoin(Thread thr, long pc) {
     long parent_tid = tid();
     long child_tid = thr.getId() - 1;
     out.println("THR_END " + child_tid + " " + pc + " 0 0");
-    out.println("THR_JOIN_BEFORE " + parent_tid + " " + pc + " " + child_tid + " 0");
     out.println("THR_JOIN_AFTER " + parent_tid + " " + pc + " " + child_tid + " 0");
   }
 }
