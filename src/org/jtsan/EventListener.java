@@ -53,7 +53,7 @@ public class EventListener {
   }
 
   public static void reportFieldAccess(
-      boolean isWrite, long tid, long pc, int id, boolean isVolatile) {
+      boolean isWrite, long tid, long pc, long id, boolean isVolatile) {
     String strTid = Long.toString(tid);
     if (isVolatile) {
       if (isWrite) {
@@ -70,10 +70,13 @@ public class EventListener {
 
   public static void objectFieldAccess(Object obj, boolean isWrite,
       String fieldName, long pc, boolean isVolatile) {
+    // TODO: make uniqueId a 64 bit value: higher half to be object ID, lower
+    // half to be field ID.
+    int uniqueId = System.identityHashCode(obj) + System.identityHashCode(fieldName.intern());
     reportFieldAccess(isWrite,
                       tid(),
                       pc,
-                      System.identityHashCode(obj),
+                      uniqueId,
                       isVolatile);
   }
 
