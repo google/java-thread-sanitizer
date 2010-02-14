@@ -48,8 +48,10 @@ File deps/asm-3.2-bin.zip has incorrect md5sum.
   </target>
 
   <target name="clean">
-    <delete dir="deps" />
     <delete dir="dist" />
     <delete dir="bin" />
+  </target>
+  <target name="deps-clean">
+    <delete dir="deps" />
   </target>
 </project>
