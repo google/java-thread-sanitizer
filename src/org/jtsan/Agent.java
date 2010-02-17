@@ -45,6 +45,8 @@ public class Agent implements ClassFileTransformer {
 
   private final CodePos codePos = new CodePos();
 
+  private final Set<String> volatileFields = new HashSet<String>();
+
   public static void premain(String arg, Instrumentation instrumentation) {
     Agent agent = new Agent();
     instrumentation.addTransformer(agent, true);
@@ -109,7 +111,7 @@ public class Agent implements ClassFileTransformer {
       // Allow no more than a single instrumentation at a time to making code
       // positions sequential and non-conflicting.
       synchronized(this) {
-        ca = newMethodTransformAdapter(this, cw, className, codePos);
+        ca = newMethodTransformAdapter(this, cw, className, codePos, volatileFields);
         cr.accept(ca, ClassReader.EXPAND_FRAMES);
         res = cw.toByteArray();
         if (className.startsWith("Hello")) {
@@ -135,12 +137,15 @@ public class Agent implements ClassFileTransformer {
     map.register("java/lang/Thread", "join()V", "jlThreadJoin");
   }
 
-  private ClassAdapter newMethodTransformAdapter(
-      final Agent myself, ClassWriter cw, final String className, final CodePos codePos) {
+  private ClassAdapter newMethodTransformAdapter(final Agent myself,
+                                                 ClassWriter cw,
+                                                 final String className,
+                                                 final CodePos codePos,
+                                                 final Set<String> volatiles) {
     return new ClassAdapter(cw) {
       private String source;
 
-      private final Set<String> volatileFields = new HashSet<String>();
+      private final Set<String> volatileFields = volatiles;
 
       /*
        * Compose a chain of visitors:
