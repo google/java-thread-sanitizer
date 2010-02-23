@@ -135,6 +135,8 @@ public class Agent implements ClassFileTransformer {
     map.registerBefore("java/lang/Object", "notify()V", "jlObjectNotify");
     map.registerBefore("java/lang/Thread", "start()V", "jlThreadStart");
     map.registerBefore("java/lang/Thread", "join()V", "jlThreadJoin");
+
+    map.registerAfter("java/lang/Object", "wait()V", "jlObjectWaitAfter");
   }
 
   private ClassAdapter newMethodTransformAdapter(final Agent myself,
