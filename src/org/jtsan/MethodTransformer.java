@@ -343,7 +343,7 @@ public class MethodTransformer extends AdviceAdapter {
 
   public void visitMethodInsn(int opcode, String owner, String name, String desc) {
     String fullMethodName = name + desc;
-    String targetName = methods.getTargetFor(owner, fullMethodName);
+    String targetName = methods.getTargetFor(owner, fullMethodName, MethodMapping.E_BEFORE_METHOD);
     // Capture code position on the call.
     push(genCodePosition());
     mv.visitMethodInsn(INVOKESTATIC,

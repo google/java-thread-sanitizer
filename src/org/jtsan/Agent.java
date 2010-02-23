@@ -128,13 +128,13 @@ public class Agent implements ClassFileTransformer {
   }
 
   private static void initSyncMethodMappings(MethodMapping map) {
-    map.register("java/lang/System",
+    map.registerBefore("java/lang/System",
                  "arraycopy(Ljava/lang/Object;ILjava/lang/Object;II)V",
                  "jlSystemArrayCopy");
-    map.register("java/lang/Object", "wait()V", "jlObjectWait");
-    map.register("java/lang/Object", "notify()V", "jlObjectNotify");
-    map.register("java/lang/Thread", "start()V", "jlThreadStart");
-    map.register("java/lang/Thread", "join()V", "jlThreadJoin");
+    map.registerBefore("java/lang/Object", "wait()V", "jlObjectWait");
+    map.registerBefore("java/lang/Object", "notify()V", "jlObjectNotify");
+    map.registerBefore("java/lang/Thread", "start()V", "jlThreadStart");
+    map.registerBefore("java/lang/Thread", "join()V", "jlThreadJoin");
   }
 
   private ClassAdapter newMethodTransformAdapter(final Agent myself,
