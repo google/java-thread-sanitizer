@@ -362,60 +362,73 @@ public class MethodTransformer extends AdviceAdapter {
     }
 
     // Capture special (=registered) calls with their parameters.
-    // TODO: should be renamed to MethodParamsSaver.
-    LocalVarsSaver saver = null;
-    boolean needsSavedParams = (beforeTarget != null) || (afterTarget != null);
-    if (needsSavedParams) {
-      saver = new LocalVarsSaver(mv, fullMethodName, localVarsSorter);
-      saver.saveStack();
-    }
+    InstrumentCallsGenerator callsGen = new InstrumentCallsGenerator(opcode, owner, name, desc);
+    callsGen.initSaveStack(fullMethodName, beforeTarget, afterTarget);
     if (opcode == Opcodes.INVOKESTATIC) {
-      if (beforeTarget != null) {
-        saver.loadStack();
-        push(genCodePosition());
-        mv.visitMethodInsn(INVOKESTATIC,
-                           "org/jtsan/EventListener",
-                           beforeTarget,
-                           desc.replace(")", "J)"));
-        saver.loadStack();
-      }
-      mv.visitMethodInsn(opcode, owner, name, desc);
-      if (afterTarget != null) {
-        saver.loadStack();
-        push(genCodePosition());
-        mv.visitMethodInsn(INVOKESTATIC,
-                           "org/jtsan/EventListener",
-                           afterTarget,
-                           desc.replace(")", "J)"));
-      }
+      callsGen.generateCall(desc.replace(")", "J)"));
     } else {
       if (afterTarget != null) {
         dup(); // Dup 'this' reference for the after-call instrumentation.
       }
       if (beforeTarget != null) {
         dup(); // Dup 'this' reference for the before-call instrumentation.
+      }
+      callsGen.generateCall(addClassAsFirstArgument(owner, desc).replace(")", "J)"));
+    }
+  }
+
+  private void visitListenerCall(String method, String descr) {
+    mv.visitMethodInsn(INVOKESTATIC, "org/jtsan/EventListener", method, descr);
+  }
+
+  /**
+   * Generates a call with proper before- and after- instrumentations including
+   * PC generation and loading local variables to stack via LocalVarsSaver.
+   */
+  private class InstrumentCallsGenerator {
+    private final int opcode;
+    private final String owner;
+    private final String name;
+    private final String desc;
+    private String beforeTarget;
+    private String afterTarget;
+
+    // TODO: should be renamed to MethodParamsSaver.
+    private LocalVarsSaver saver;
+
+    public InstrumentCallsGenerator(int opcode, String owner, String name, String desc) {
+      this.opcode = opcode;
+      this.owner = owner;
+      this.name = name;
+      this.desc = desc;
+    }
+
+    public void initSaveStack(String fullMethodName, String beforeTarget, String afterTarget) {
+      this.beforeTarget = beforeTarget;
+      this.afterTarget = afterTarget;
+      if (beforeTarget != null || afterTarget != null) {
+        saver = new LocalVarsSaver(mv, fullMethodName, localVarsSorter);
+        saver.saveStack();
+      }
+    }
+
+    public void generateCall(String listenDesc) {
+      if (beforeTarget != null) {
         saver.loadStack();
         push(genCodePosition());
-        mv.visitMethodInsn(INVOKESTATIC,
-                           "org/jtsan/EventListener",
-                           beforeTarget,
-                           addClassAsFirstArgument(owner, desc).replace(")", "J)"));
+        visitListenerCall(beforeTarget, listenDesc);
         saver.loadStack();
       }
       mv.visitMethodInsn(opcode, owner, name, desc);
       if (afterTarget != null) {
         saver.loadStack();
         push(genCodePosition());
-        mv.visitMethodInsn(INVOKESTATIC,
-                           "org/jtsan/EventListener",
-                           afterTarget,
-                           // TODO: eliminate code duplication.
-                           addClassAsFirstArgument(owner, desc).replace(")", "J)"));
+        visitListenerCall(afterTarget, listenDesc);
       }
     }
   }
 
-  private Type getSourceSlotType(int opcode) {
+  private static Type getSourceSlotType(int opcode) {
     switch (opcode) {
       case IASTORE: return Type.INT_TYPE;
       case LASTORE: return Type.LONG_TYPE;
