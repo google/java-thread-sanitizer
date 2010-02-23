@@ -223,10 +223,7 @@ public class MethodTransformer extends AdviceAdapter {
   }
 
   private void visitObjectFieldAccessCall() {
-    mv.visitMethodInsn(INVOKESTATIC,
-        "org/jtsan/EventListener",
-        "objectFieldAccess",
-        "(Ljava/lang/Object;ZLjava/lang/String;JZ)V");
+    visitListenerCall("objectFieldAccess", "(Ljava/lang/Object;ZLjava/lang/String;JZ)V");
   }
 
   private void visitStaticFieldAccess(String fullName, boolean isWrite) {
@@ -238,10 +235,7 @@ public class MethodTransformer extends AdviceAdapter {
     push(isWrite);
     push(genCodePosition());
     push(isVolatileField(fullName));
-    mv.visitMethodInsn(INVOKESTATIC,
-        "org/jtsan/EventListener",
-        "staticFieldAccess",
-        "(Ljava/lang/String;ZJZ)V");
+    visitListenerCall("staticFieldAccess", "(Ljava/lang/String;ZJZ)V");
   }
 
   @Override
@@ -272,38 +266,23 @@ public class MethodTransformer extends AdviceAdapter {
   }
 
   private void captureMonitorExit() {
-    mv.visitMethodInsn(INVOKESTATIC,
-        "org/jtsan/EventListener",
-        "monitorExit",
-        "(Ljava/lang/Object;J)V");
+    visitListenerCall("monitorExit", "(Ljava/lang/Object;J)V");
   }
 
   private void captureMonitorEnter() {
-    mv.visitMethodInsn(INVOKESTATIC,
-        "org/jtsan/EventListener",
-        "monitorEnter",
-        "(Ljava/lang/Object;J)V");
+    visitListenerCall("monitorEnter", "(Ljava/lang/Object;J)V");
   }
 
   private void captureMethodEnter() {
-    mv.visitMethodInsn(INVOKESTATIC,
-        "org/jtsan/EventListener",
-        "methodEnter",
-        "(J)V");
+    visitListenerCall("methodEnter", "(J)V");
   }
 
   private void captureMethodExit() {
-    mv.visitMethodInsn(INVOKESTATIC,
-        "org/jtsan/EventListener",
-        "methodExit",
-        "(J)V");
+    visitListenerCall("methodExit", "(J)V");
     if (methodName.equals("run")) {
       loadThis();
       push(genCodePosition());
-      mv.visitMethodInsn(INVOKESTATIC,
-          "org/jtsan/EventListener",
-          "runMethodExit",
-          "(Ljava/lang/Object;J)V");
+      visitListenerCall("runMethodExit", "(Ljava/lang/Object;J)V");
     }
   }
 
@@ -312,10 +291,7 @@ public class MethodTransformer extends AdviceAdapter {
     mv.visitVarInsn(ISTORE, indexVar);
     dup();
     mv.visitVarInsn(ILOAD, indexVar);
-    mv.visitMethodInsn(INVOKESTATIC,
-        "org/jtsan/EventListener",
-        "arrayLoad",
-        "(Ljava/lang/Object;I)V");
+    visitListenerCall("arrayLoad", "(Ljava/lang/Object;I)V");
     mv.visitVarInsn(ILOAD, indexVar);
   }
 
@@ -329,10 +305,7 @@ public class MethodTransformer extends AdviceAdapter {
     mv.visitVarInsn(ISTORE, indexVar);
     dup();
     mv.visitVarInsn(ILOAD, indexVar);
-    mv.visitMethodInsn(INVOKESTATIC,
-                       "org/jtsan/EventListener",
-                       "arrayStore",
-                       "(Ljava/lang/Object;I)V");
+    visitListenerCall("arrayStore", "(Ljava/lang/Object;I)V");
     mv.visitVarInsn(ILOAD, indexVar);
     mv.visitVarInsn(slotType.getOpcode(ILOAD), valueVar);
   }
@@ -350,10 +323,7 @@ public class MethodTransformer extends AdviceAdapter {
 
     // Capture code position on the call.
     push(genCodePosition());
-    mv.visitMethodInsn(INVOKESTATIC,
-                       "org/jtsan/EventListener",
-                       "beforeCall",
-                       "(J)V");
+    visitListenerCall("beforeCall", "(J)V");
 
     // Proceed an ordinary call without extra instrumentation.
     if (opcode == Opcodes.INVOKESPECIAL) {
