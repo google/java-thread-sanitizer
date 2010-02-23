@@ -25,56 +25,71 @@ import java.util.Set;
  * @author Egor Pasko
  */
 public class MethodMapping {
-  private final ConcurrentHashMap<String, ConcurrentHashMap<String, EventInfo>> registeredClasses;
+  public static final int E_NONE = 0;
+  public static final int E_BEFORE_METHOD = 1;
+  public static final int E_AFTER_METHOD = 2;
 
+  private final ConcurrentHashMap<EventInfo, String> map;
+
+  /**
+   * A hashable tuple of (className, methodName, eventType).
+   */
   private static class EventInfo {
-    private final String name;
-    private final int eventMask;
+    private final String className;
+    private final String methodName;
+    private final int eventType;
+    private final int hash;
 
-    public EventInfo(String name, int eventMask) {
-      this.name = name;
-      this.eventMask = eventMask;
+    public EventInfo(String cls, String meth, int type) {
+      this.className = cls;
+      this.methodName = meth;
+      this.eventType = type;
+      this.hash = calculateHashCode();
     }
 
-    public String getName() {
-      return name;
+    private int calculateHashCode() {
+      int h = className == null ? 2 : className.hashCode();
+      h = 31 * h + (methodName == null ? 3 : methodName.hashCode());
+      h = 7 * h + 5 * eventType;
+      return h;
     }
-  }
 
-  public boolean isRegistered(String className) {
-    return registeredClasses.get(className) != null;
+    public boolean equals(Object obj) {
+      if (!(obj instanceof EventInfo)) {
+        return false;
+      }
+      EventInfo e = (EventInfo)obj;
+      return (className != null &&
+          className.equals(e.className) &&
+          methodName != null &&
+          methodName.equals(e.methodName) &&
+          e.eventType == eventType);
+    }
+
+    public int hashCode() {
+      return hash;
+    }
   }
 
   public MethodMapping() {
-    registeredClasses = new ConcurrentHashMap<String, ConcurrentHashMap<String, EventInfo> >(10);
+    map = new ConcurrentHashMap<EventInfo, String>(10);
   }
 
-  private Map<String, EventInfo> getRegisteredMethods(String className) {
-    return registeredClasses.get(className);
+  public void registerEvent(
+      String className, String methodName, int eventType, String eventMethod) {
+    map.put(new EventInfo(className, methodName, eventType), eventMethod);
   }
 
-  public synchronized void register(String className, String methodName, String eventMethod) {
-    ConcurrentHashMap<String, EventInfo> methods = registeredClasses.get(className);
-    if (null == methods) {
-      methods = new ConcurrentHashMap<String, EventInfo>(2);
-      registeredClasses.put(className, methods);
-    }
-    methods.put(methodName, new EventInfo(eventMethod, 0));
+  public void registerBefore(String className, String methodName, String eventMethod) {
+    registerEvent(className, methodName, E_BEFORE_METHOD, eventMethod);
   }
 
-  public Set<String> registeredClassNames() {
-    return registeredClasses.keySet();
+  public void registerAfter(String className, String methodName, String eventMethod) {
+    registerEvent(className, methodName, E_AFTER_METHOD, eventMethod);
   }
 
-  public String getTargetFor(String className, String name) {
-    Map<String, EventInfo> map = registeredClasses.get(className);
-    if (map == null) {
-      return null;
-    }
-    EventInfo targetInfo = map.get(name);
-    if (targetInfo == null) {
-      return null;
-    }
-    return targetInfo.getName();
+  public String getTargetFor(String className, String name, int eventType) {
+    return map.get(new EventInfo(className, name, eventType));
+
   }
 }
