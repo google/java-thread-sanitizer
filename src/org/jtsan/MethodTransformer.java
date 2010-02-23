@@ -343,7 +343,11 @@ public class MethodTransformer extends AdviceAdapter {
 
   public void visitMethodInsn(int opcode, String owner, String name, String desc) {
     String fullMethodName = name + desc;
-    String targetName = methods.getTargetFor(owner, fullMethodName, MethodMapping.E_BEFORE_METHOD);
+    String beforeTarget =
+      methods.getTargetFor(owner, fullMethodName, MethodMapping.E_BEFORE_METHOD);
+    String afterTarget =
+      methods.getTargetFor(owner, fullMethodName, MethodMapping.E_AFTER_METHOD);
+
     // Capture code position on the call.
     push(genCodePosition());
     mv.visitMethodInsn(INVOKESTATIC,
@@ -352,34 +356,62 @@ public class MethodTransformer extends AdviceAdapter {
                        "(J)V");
 
     // Proceed an ordinary call without extra instrumentation.
-    if (targetName == null || opcode == Opcodes.INVOKESPECIAL) {
+    if (opcode == Opcodes.INVOKESPECIAL) {
       mv.visitMethodInsn(opcode, owner, name, desc);
       return;
     }
 
     // Capture special (=registered) calls with their parameters.
     // TODO: should be renamed to MethodParamsSaver.
-    LocalVarsSaver saver = new LocalVarsSaver(mv, fullMethodName, localVarsSorter);
-    if (opcode == Opcodes.INVOKESTATIC) {
-      saver.saveAndLoadStack();
-      push(genCodePosition());
-      mv.visitMethodInsn(INVOKESTATIC,
-                         "org/jtsan/EventListener",
-                         targetName,
-                         desc.replace(")", "J)"));
-      saver.loadStack();
-      mv.visitMethodInsn(opcode, owner, name, desc);
-    } else {
+    LocalVarsSaver saver = null;
+    boolean needsSavedParams = (beforeTarget != null) || (afterTarget != null);
+    if (needsSavedParams) {
+      saver = new LocalVarsSaver(mv, fullMethodName, localVarsSorter);
       saver.saveStack();
-      dup(); // Dup 'this' reference for the call.
-      saver.loadStack();
-      push(genCodePosition());
-      mv.visitMethodInsn(INVOKESTATIC,
-                         "org/jtsan/EventListener",
-                         targetName,
-                         addClassAsFirstArgument(owner, desc).replace(")", "J)"));
-      saver.loadStack();
+    }
+    if (opcode == Opcodes.INVOKESTATIC) {
+      if (beforeTarget != null) {
+        saver.loadStack();
+        push(genCodePosition());
+        mv.visitMethodInsn(INVOKESTATIC,
+                           "org/jtsan/EventListener",
+                           beforeTarget,
+                           desc.replace(")", "J)"));
+        saver.loadStack();
+      }
       mv.visitMethodInsn(opcode, owner, name, desc);
+      if (afterTarget != null) {
+        saver.loadStack();
+        push(genCodePosition());
+        mv.visitMethodInsn(INVOKESTATIC,
+                           "org/jtsan/EventListener",
+                           afterTarget,
+                           desc.replace(")", "J)"));
+      }
+    } else {
+      if (afterTarget != null) {
+        dup(); // Dup 'this' reference for the after-call instrumentation.
+      }
+      if (beforeTarget != null) {
+        dup(); // Dup 'this' reference for the before-call instrumentation.
+        saver.loadStack();
+        push(genCodePosition());
+        mv.visitMethodInsn(INVOKESTATIC,
+                           "org/jtsan/EventListener",
+                           beforeTarget,
+                           addClassAsFirstArgument(owner, desc).replace(")", "J)"));
+        saver.loadStack();
+      }
+      mv.visitMethodInsn(opcode, owner, name, desc);
+      if (afterTarget != null) {
+        saver.loadStack();
+        push(genCodePosition());
+        mv.visitMethodInsn(INVOKESTATIC,
+                           "org/jtsan/EventListener",
+                           afterTarget,
+                           // TODO: eliminate code duplication.
+                           addClassAsFirstArgument(owner, desc).replace(")", "J)"));
+      }
     }
   }
 
