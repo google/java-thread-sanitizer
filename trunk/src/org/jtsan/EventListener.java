@@ -148,4 +148,18 @@ public class EventListener {
     out.println("THR_END " + child_tid + " " + pc + " 0 0");
     out.println("THR_JOIN_AFTER " + parent_tid + " " + pc + " " + child_tid + " 0");
   }
+
+  public static void jlApiNoOp(Object obj, long pc) {
+    // out.println("T" + tid() + " API_NO_OP " + pc);
+  }
+  public static void jlApiExectRaceBegin(long pc) {
+    out.println("EXPECT_RACE_BEGIN " + tid() + " " + pc + " 0 0");
+  }
+  public static void jlApiExectRaceEnd(long pc) {
+    out.println("EXPECT_RACE_END " + tid() + " " + pc + " 0 0");
+  }
+  public static void jlApiPrintStackTrace(long pc) {
+    out.println("STACK_TRACE " + tid() + " " + pc + " 0 0");
+  }
+
 }
