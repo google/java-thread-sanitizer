@@ -134,9 +134,13 @@ public class Agent implements ClassFileTransformer {
     map.registerBefore("java/lang/Object", "wait()V", "jlObjectWait");
     map.registerBefore("java/lang/Object", "notify()V", "jlObjectNotify");
     map.registerBefore("java/lang/Thread", "start()V", "jlThreadStart");
-    map.registerBefore("java/lang/Thread", "join()V", "jlThreadJoin");
-
+    map.registerAfter("java/lang/Thread", "join()V", "jlThreadJoin");
     map.registerAfter("java/lang/Object", "wait()V", "jlObjectWaitAfter");
+
+    map.registerBefore("RaceDetectorApi", "NoOp(Ljava/lang/Object;)V", "jlApiNoOp");
+    map.registerBefore("RaceDetectorApi", "ExpectRaceBegin()V", "jlApiExectRaceBegin");
+    map.registerBefore("RaceDetectorApi", "ExpectRaceEnd()V", "jlApiExectRaceEnd");
+    map.registerBefore("RaceDetectorApi", "PrintStackTrace()V", "jlApiPrintStackTrace");
   }
 
   private ClassAdapter newMethodTransformAdapter(final Agent myself,
