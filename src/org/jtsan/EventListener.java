@@ -19,6 +19,7 @@ import java.io.PrintWriter;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Performs actions on intercepted events.
@@ -198,6 +199,13 @@ public class EventListener {
     WriteLock(lock, pc);
   }
   public static void jucRRWL_WriteLock_unlock(ReentrantReadWriteLock.WriteLock lock, long pc){
+    Unlock(lock, pc);
+  }
+
+  public static void jucRL_lock(ReentrantLock lock, long pc){
+    WriteLock(lock, pc);
+  }
+  public static void jucRL_unlock(ReentrantLock lock, long pc){
     Unlock(lock, pc);
   }
 

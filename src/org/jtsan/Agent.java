@@ -162,6 +162,12 @@ public class Agent implements ClassFileTransformer {
     map.registerBefore("java/util/concurrent/locks/ReentrantReadWriteLock$WriteLock",
                       "unlock()V", "jucRRWL_WriteLock_unlock");
 
+    // java.util.concurrent.locks.ReentrantLock
+    // TODO(kcc): support tryLock().
+    map.registerAfter("java/util/concurrent/locks/ReentrantLock",
+                       "lock()V", "jucRL_lock");
+    map.registerBefore("java/util/concurrent/locks/ReentrantLock",
+                      "unlock()V", "jucRL_unlock");
 
     // RaceDetectorApi
     map.registerBefore("RaceDetectorApi", "NoOp(Ljava/lang/Object;)V", "rdaApiNoOp");
