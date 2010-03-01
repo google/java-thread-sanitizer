@@ -17,6 +17,7 @@ package org.jtsan;
 
 import java.io.PrintWriter;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 
 /**
  * Performs actions on intercepted events.
@@ -150,14 +151,29 @@ public class EventListener {
     out.println("THR_JOIN_AFTER " + parent_tid + " " + pc + " " + child_tid + " 0");
   }
 
-  public static void jucCountDownLatch_countDown(CountDownLatch latch, long pc){
+  static void SignalOnObject(Object obj, long pc){
     out.println("SIGNAL " + tid() + " " + pc + " " +
-        System.identityHashCode(latch) + " 0");
+        System.identityHashCode(obj) + " 0");
+  }
+  static void WaitOnObject(Object obj, long pc){
+    out.println("WAIT " + tid() + " " + pc + " " +
+        System.identityHashCode(obj) + " 0");
+  }
+
+  public static void jucCountDownLatch_countDown(CountDownLatch latch, long pc){
+    SignalOnObject(latch, pc);
   }
 
   public static void jucCountDownLatch_await(CountDownLatch latch, long pc){
-    out.println("WAIT " + tid() + " " + pc + " " +
-        System.identityHashCode(latch) + " 0");
+    WaitOnObject(latch, pc);
+  }
+
+  public static void jucSemaphore_release(Semaphore sem, long pc){
+    SignalOnObject(sem, pc);
+  }
+
+  public static void jucSemaphore_acquire(Semaphore sem, long pc){
+    WaitOnObject(sem, pc);
   }
 
   public static void rdaApiNoOp(Object obj, long pc) {

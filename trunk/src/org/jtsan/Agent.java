@@ -137,12 +137,19 @@ public class Agent implements ClassFileTransformer {
     map.registerAfter("java/lang/Thread", "join()V", "jlThreadJoin");
     map.registerAfter("java/lang/Object", "wait()V", "jlObjectWaitAfter");
 
+    // java.util.concurrent.CountDownLatch
     map.registerBefore("java/util/concurrent/CountDownLatch",
                        "countDown()V", "jucCountDownLatch_countDown");
     map.registerAfter("java/util/concurrent/CountDownLatch",
                        "await()V", "jucCountDownLatch_await");
 
+    // java.util.concurrent.Semaphore
+    map.registerBefore("java/util/concurrent/Semaphore",
+                       "release()V", "jucSemaphore_release");
+    map.registerAfter("java/util/concurrent/Semaphore",
+                       "acquire()V", "jucSemaphore_acquire");
 
+    // RaceDetectorApi
     map.registerBefore("RaceDetectorApi", "NoOp(Ljava/lang/Object;)V", "rdaApiNoOp");
     map.registerBefore("RaceDetectorApi", "ExpectRaceBegin()V", "rdaApiExectRaceBegin");
     map.registerBefore("RaceDetectorApi", "ExpectRaceEnd()V", "rdaApiExectRaceEnd");
