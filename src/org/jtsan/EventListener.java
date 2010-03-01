@@ -16,6 +16,7 @@
 package org.jtsan;
 
 import java.io.PrintWriter;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Performs actions on intercepted events.
@@ -147,6 +148,16 @@ public class EventListener {
     long child_tid = thr.getId() - 1;
     out.println("THR_END " + child_tid + " " + pc + " 0 0");
     out.println("THR_JOIN_AFTER " + parent_tid + " " + pc + " " + child_tid + " 0");
+  }
+
+  public static void jucCountDownLatch_countDown(CountDownLatch latch, long pc){
+    out.println("SIGNAL " + tid() + " " + pc + " " +
+        System.identityHashCode(latch) + " 0");
+  }
+
+  public static void jucCountDownLatch_await(CountDownLatch latch, long pc){
+    out.println("WAIT " + tid() + " " + pc + " " +
+        System.identityHashCode(latch) + " 0");
   }
 
   public static void rdaApiNoOp(Object obj, long pc) {
