@@ -149,6 +149,20 @@ public class Agent implements ClassFileTransformer {
     map.registerAfter("java/util/concurrent/Semaphore",
                        "acquire()V", "jucSemaphore_acquire");
 
+    // java.util.concurrent.locks.ReentrantReadWriteLock
+    // TODO(kcc): support tryLock().
+    // TODO(kcc): send events based on the enclosing object (ReentrantReadWriteLock)
+    // instead of the ReadLock/WriteLock object.
+    map.registerAfter("java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock",
+                       "lock()V", "jucRRWL_ReadLock_lock");
+    map.registerBefore("java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock",
+                      "unlock()V", "jucRRWL_ReadLock_unlock");
+    map.registerAfter("java/util/concurrent/locks/ReentrantReadWriteLock$WriteLock",
+                       "lock()V", "jucRRWL_WriteLock_lock");
+    map.registerBefore("java/util/concurrent/locks/ReentrantReadWriteLock$WriteLock",
+                      "unlock()V", "jucRRWL_WriteLock_unlock");
+
+
     // RaceDetectorApi
     map.registerBefore("RaceDetectorApi", "NoOp(Ljava/lang/Object;)V", "rdaApiNoOp");
     map.registerBefore("RaceDetectorApi", "ExpectRaceBegin()V", "rdaApiExectRaceBegin");

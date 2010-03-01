@@ -18,6 +18,7 @@ package org.jtsan;
 import java.io.PrintWriter;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Performs actions on intercepted events.
@@ -29,6 +30,28 @@ public class EventListener {
 
   public static long tid() {
     return Thread.currentThread().getId() - 1;
+  }
+
+  static void SignalOnObject(Object obj, long pc){
+    out.println("SIGNAL " + tid() + " " + pc + " " +
+        System.identityHashCode(obj) + " 0");
+  }
+  static void WaitOnObject(Object obj, long pc){
+    out.println("WAIT " + tid() + " " + pc + " " +
+        System.identityHashCode(obj) + " 0");
+  }
+
+  static void WriteLock(Object obj, long pc) {
+    out.println("WRITER_LOCK " + tid() + " " + pc + " " +
+        System.identityHashCode(obj) + " 0");
+  }
+  static void ReadLock(Object obj, long pc) {
+    out.println("READER_LOCK " + tid() + " " + pc + " " +
+        System.identityHashCode(obj) + " 0");
+  }
+  static void Unlock(Object obj, long pc) {
+    out.println("UNLOCK " + tid() + " " + pc + " " +
+        System.identityHashCode(obj) + " 0");
   }
 
   public static void codePosition(long pc, String descr) {
@@ -94,13 +117,11 @@ public class EventListener {
   }
 
   public static void monitorEnter(Object obj, long pc) {
-    out.println("WRITER_LOCK " + tid() + " " + pc + " " +
-        System.identityHashCode(obj) + " 0");
+    WriteLock(obj, pc);
   }
 
   public static void monitorExit(Object obj, long pc) {
-    out.println("UNLOCK " + tid() + " " + pc + " " +
-        System.identityHashCode(obj) + " 0");
+    Unlock(obj, pc);
   }
 
   public static void arrayLoad(Object array, int index) {
@@ -121,8 +142,7 @@ public class EventListener {
   }
 
   public static void jlObjectNotify(Object obj, long pc) {
-    out.println("SIGNAL " + tid() + " " + pc + " " +
-        System.identityHashCode(obj) + " 0");
+    SignalOnObject(obj, pc);
   }
 
   public static void jlSystemArrayCopy(
@@ -151,15 +171,6 @@ public class EventListener {
     out.println("THR_JOIN_AFTER " + parent_tid + " " + pc + " " + child_tid + " 0");
   }
 
-  static void SignalOnObject(Object obj, long pc){
-    out.println("SIGNAL " + tid() + " " + pc + " " +
-        System.identityHashCode(obj) + " 0");
-  }
-  static void WaitOnObject(Object obj, long pc){
-    out.println("WAIT " + tid() + " " + pc + " " +
-        System.identityHashCode(obj) + " 0");
-  }
-
   public static void jucCountDownLatch_countDown(CountDownLatch latch, long pc){
     SignalOnObject(latch, pc);
   }
@@ -174,6 +185,20 @@ public class EventListener {
 
   public static void jucSemaphore_acquire(Semaphore sem, long pc){
     WaitOnObject(sem, pc);
+  }
+
+  // TODO(kcc): need to send events based on the enclosing ReentrantReadWriteLock object.
+  public static void jucRRWL_ReadLock_lock(ReentrantReadWriteLock.ReadLock lock, long pc){
+    ReadLock(lock, pc);
+  }
+  public static void jucRRWL_ReadLock_unlock(ReentrantReadWriteLock.ReadLock lock, long pc){
+    Unlock(lock, pc);
+  }
+  public static void jucRRWL_WriteLock_lock(ReentrantReadWriteLock.WriteLock lock, long pc){
+    WriteLock(lock, pc);
+  }
+  public static void jucRRWL_WriteLock_unlock(ReentrantReadWriteLock.WriteLock lock, long pc){
+    Unlock(lock, pc);
   }
 
   public static void rdaApiNoOp(Object obj, long pc) {
