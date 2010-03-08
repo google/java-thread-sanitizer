@@ -75,7 +75,9 @@ public class EventListener {
   public static void runMethodEnter(Object obj, long pc) {
     if (obj instanceof Thread) {
       Thread thr = (Thread) obj;
-      out.println("THR_START " + (thr.getId() - 1) + " " + pc + " 0 0");
+      long child_tid = thr.getId() - 1;
+      out.println("THR_START " + child_tid + " " + pc + " 0 0");
+      out.println("THR_FIRST_INSN " + child_tid + " " + pc + " 0 0");
     }
   }
 
