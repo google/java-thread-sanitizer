@@ -133,7 +133,10 @@ public class Agent implements ClassFileTransformer {
                  "jlSystemArrayCopy");
     map.registerBefore("java/lang/Object", "wait()V", "jlObjectWait");
     map.registerBefore("java/lang/Object", "notify()V", "jlObjectNotify");
-    map.registerBefore("java/lang/Thread", "start()V", "jlThreadStart");
+    // TODO: Not intercepting jlThreadStart until we learn to instrument all
+    // start() invocations with runtime checking whether the instance is a
+    // descendant of the original class. We have a similar problem with wait().
+    // map.registerBefore("java/lang/Thread", "start()V", "jlThreadStart");
     map.registerAfter("java/lang/Thread", "join()V", "jlThreadJoin");
     map.registerAfter("java/lang/Object", "wait()V", "jlObjectWaitAfter");
 
