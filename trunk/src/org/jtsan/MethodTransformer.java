@@ -274,6 +274,11 @@ public class MethodTransformer extends AdviceAdapter {
   }
 
   private void captureMethodEnter() {
+    if (methodName.equals("run")) {
+      loadThis();
+      push(genCodePosition());
+      visitListenerCall("runMethodEnter", "(Ljava/lang/Object;J)V");
+    }
     visitListenerCall("methodEnter", "(J)V");
   }
 

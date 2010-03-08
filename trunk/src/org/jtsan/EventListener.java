@@ -72,6 +72,13 @@ public class EventListener {
     out.println("RTN_EXIT " + tid() + " " + pc + " 0 0");
   }
 
+  public static void runMethodEnter(Object obj, long pc) {
+    if (obj instanceof Thread) {
+      Thread thr = (Thread) obj;
+      out.println("THR_START " + (thr.getId() - 1) + " " + pc + " 0 0");
+    }
+  }
+
   public static void runMethodExit(Object obj, long pc) {
     if (obj instanceof Thread) {
       // out.println("THR_END " + tid() + " " + pc + " 0 0");
