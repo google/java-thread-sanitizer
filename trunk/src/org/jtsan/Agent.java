@@ -37,6 +37,8 @@ public class Agent implements ClassFileTransformer {
 
   private static final String LOGFILE_PREFIX = "logfile=";
 
+  private static final String DEBUG_CLASS_PREFIX = "cls=";
+
   // Ignore list to eliminate endless recursion.
   private static String[] ignore = new String[] { "java", "sun/", "org/jtsan" };
 
@@ -46,6 +48,8 @@ public class Agent implements ClassFileTransformer {
   private final CodePos codePos = new CodePos();
 
   private final Set<String> volatileFields = new HashSet<String>();
+
+  private String debugClassPrefix;
 
   public static void premain(String arg, Instrumentation instrumentation) {
     Agent agent = new Agent();
@@ -65,6 +69,10 @@ public class Agent implements ClassFileTransformer {
         int idx = args[i].lastIndexOf(LOGFILE_PREFIX);
         if (idx != -1) {
           fname = args[i].substring(idx + LOGFILE_PREFIX.length());
+        }
+        idx = args[i].lastIndexOf(DEBUG_CLASS_PREFIX);
+        if (idx != -1) {
+          agent.debugClassPrefix = args[i].substring(idx + DEBUG_CLASS_PREFIX.length());
         }
       }
     }
@@ -114,8 +122,8 @@ public class Agent implements ClassFileTransformer {
         ca = newMethodTransformAdapter(this, cw, className, codePos, volatileFields);
         cr.accept(ca, ClassReader.EXPAND_FRAMES);
         res = cw.toByteArray();
-        if (className.startsWith("Hello")) {
-          //printTransformedClass(res);
+        if (debugClassPrefix != null && className.startsWith(debugClassPrefix)) {
+          printTransformedClass(res);
         }
       }
       return res;
