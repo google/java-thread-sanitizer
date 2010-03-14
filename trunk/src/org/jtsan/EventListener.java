@@ -27,7 +27,11 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Egor Pasko
  */
 public class EventListener {
-  public static PrintWriter out;
+  private static PrintWriter out;
+
+  public static void setPrinter(PrintWriter w) {
+    out = w;
+  }
 
   public static long tid() {
     return Thread.currentThread().getId() - 1;
@@ -165,6 +169,11 @@ public class EventListener {
                       destPos,
                       length);
                       */
+  }
+
+  public static void threadsInit() {
+    out.println("THR_START 0 0 0 0");
+    out.println("THR_FIRST_INSN 0 0 0 0");
   }
 
   public static void jlThreadStart(Thread thr, long pc) {
