@@ -76,8 +76,8 @@ public class EventListener {
     if (obj instanceof Thread) {
       Thread thr = (Thread) obj;
       long child_tid = thr.getId() - 1;
-      out.println("THR_START " + child_tid + " " + pc + " 0 0");
-      out.println("THR_FIRST_INSN " + child_tid + " " + pc + " 0 0");
+      //out.println("THR_START " + child_tid + " " + pc + " 0 0");
+      //out.println("THR_FIRST_INSN " + child_tid + " " + pc + " 0 0");
     }
   }
 

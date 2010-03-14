@@ -141,10 +141,7 @@ public class Agent implements ClassFileTransformer {
                  "jlSystemArrayCopy");
     map.registerBefore("java/lang/Object", "wait()V", "jlObjectWait");
     map.registerBefore("java/lang/Object", "notify()V", "jlObjectNotify");
-    // TODO: Not intercepting jlThreadStart until we learn to instrument all
-    // start() invocations with runtime checking whether the instance is a
-    // descendant of the original class. We have a similar problem with wait().
-    // map.registerBefore("java/lang/Thread", "start()V", "jlThreadStart");
+    map.registerBefore("java/lang/Thread", "start()V", "jlThreadStart");
     map.registerAfter("java/lang/Thread", "join()V", "jlThreadJoin");
     map.registerAfter("java/lang/Object", "wait()V", "jlObjectWaitAfter");
 
@@ -152,40 +149,41 @@ public class Agent implements ClassFileTransformer {
     map.registerBefore("java/util/concurrent/CountDownLatch",
                        "countDown()V", "jucCountDownLatch_countDown");
     map.registerAfter("java/util/concurrent/CountDownLatch",
-                       "await()V", "jucCountDownLatch_await");
+                      "await()V", "jucCountDownLatch_await");
 
     // java.util.concurrent.Semaphore
     map.registerBefore("java/util/concurrent/Semaphore",
                        "release()V", "jucSemaphore_release");
     map.registerAfter("java/util/concurrent/Semaphore",
-                       "acquire()V", "jucSemaphore_acquire");
+                      "acquire()V", "jucSemaphore_acquire");
 
     // java.util.concurrent.locks.ReentrantReadWriteLock
     // TODO(kcc): support tryLock().
     // TODO(kcc): send events based on the enclosing object (ReentrantReadWriteLock)
     // instead of the ReadLock/WriteLock object.
     map.registerAfter("java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock",
-                       "lock()V", "jucRRWL_ReadLock_lock");
+                      "lock()V", "jucRRWL_ReadLock_lock");
     map.registerBefore("java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock",
-                      "unlock()V", "jucRRWL_ReadLock_unlock");
+                       "unlock()V", "jucRRWL_ReadLock_unlock");
     map.registerAfter("java/util/concurrent/locks/ReentrantReadWriteLock$WriteLock",
-                       "lock()V", "jucRRWL_WriteLock_lock");
+                      "lock()V", "jucRRWL_WriteLock_lock");
     map.registerBefore("java/util/concurrent/locks/ReentrantReadWriteLock$WriteLock",
-                      "unlock()V", "jucRRWL_WriteLock_unlock");
+                       "unlock()V", "jucRRWL_WriteLock_unlock");
 
     // java.util.concurrent.locks.ReentrantLock
     // TODO(kcc): support tryLock().
     map.registerAfter("java/util/concurrent/locks/ReentrantLock",
-                       "lock()V", "jucRL_lock");
+                      "lock()V", "jucRL_lock");
     map.registerBefore("java/util/concurrent/locks/ReentrantLock",
                       "unlock()V", "jucRL_unlock");
 
-    // RaceDetectorApi
-    map.registerBefore("RaceDetectorApi", "NoOp(Ljava/lang/Object;)V", "rdaApiNoOp");
-    map.registerBefore("RaceDetectorApi", "ExpectRaceBegin()V", "rdaApiExectRaceBegin");
-    map.registerBefore("RaceDetectorApi", "ExpectRaceEnd()V", "rdaApiExectRaceEnd");
-    map.registerBefore("RaceDetectorApi", "PrintStackTrace()V", "rdaApiPrintStackTrace");
-    map.registerBefore("RaceDetectorApi", "Print(Ljava/lang/String;)V", "rdaApiPrint");
+    // RaceDetectorApi. Put exact matching to eliminate the cost of extra checks.
+    // TODO(egor): methods must be named starting with lowercase letter.
+    map.registerBeforeExact("RaceDetectorApi", "NoOp(Ljava/lang/Object;)V", "rdaApiNoOp");
+    map.registerBeforeExact("RaceDetectorApi", "ExpectRaceBegin()V", "rdaApiExectRaceBegin");
+    map.registerBeforeExact("RaceDetectorApi", "ExpectRaceEnd()V", "rdaApiExectRaceEnd");
+    map.registerBeforeExact("RaceDetectorApi", "PrintStackTrace()V", "rdaApiPrintStackTrace");
+    map.registerBeforeExact("RaceDetectorApi", "Print(Ljava/lang/String;)V", "rdaApiPrint");
   }
 
   private ClassAdapter newMethodTransformAdapter(final Agent myself,
