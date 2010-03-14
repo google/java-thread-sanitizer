@@ -315,8 +315,37 @@ public class MethodTransformer extends AdviceAdapter {
     mv.visitVarInsn(slotType.getOpcode(ILOAD), valueVar);
   }
 
-  private static String addClassAsFirstArgument(String className, String desc) {
-    return desc.replace("(", "(L" + className + ";");
+  /**
+   * A simple generation interface for using in {@code InstrumentCalls}.
+   */
+  public class GenerationCallback {
+    private final int opcode;
+    private final String owner;
+    private final String name;
+    private final String desc;
+
+    public GenerationCallback(int opcode, String owner, String name, String desc) {
+      this.opcode = opcode;
+      this.owner = owner;
+      this.name = name;
+      this.desc = desc;
+    }
+
+    public LocalVarsSaver createLocalVarsSaver() {
+      return new LocalVarsSaver(mv, desc, localVarsSorter);
+    }
+
+    public void visitMethodInsn() {
+      mv.visitMethodInsn(opcode, owner, name, desc);
+    }
+
+    public long codePosition() {
+      return genCodePosition();
+    }
+
+    public void listenerCall(String meth, String listenerDesc) {
+      visitListenerCall(meth, listenerDesc);
+    }
   }
 
   public void visitMethodInsn(int opcode, String owner, String name, String desc) {
@@ -331,112 +360,16 @@ public class MethodTransformer extends AdviceAdapter {
     }
 
     // Capture special (=registered) calls with their parameters.
-    InstrumentCallsGenerator callsGen = new InstrumentCallsGenerator(opcode, owner, name, desc);
+    InstrumentCalls callsGen =
+        new InstrumentCalls(new GenerationCallback(opcode, owner, name, desc),
+                            this, opcode, owner, desc);
+    callsGen.setBeforeTargets(methods.getTargetsFor(name + desc, MethodMapping.E_BEFORE_METHOD));
+    callsGen.setAfterTargets(methods.getTargetsFor(name + desc, MethodMapping.E_AFTER_METHOD));
     callsGen.generateCall();
   }
 
   private void visitListenerCall(String method, String descr) {
     mv.visitMethodInsn(INVOKESTATIC, "org/jtsan/EventListener", method, descr);
-  }
-
-  /**
-   * Generates a call with proper before- and after- instrumentations including
-   * PC generation and loading local variables to stack via LocalVarsSaver.
-   */
-  private class InstrumentCallsGenerator {
-    private final int opcode;
-    private final String owner;
-    private final String name;
-    private final String orgDesc;
-    private final String listenerDesc;
-    private final String fullMethodName;
-    private List<MethodMapping.HandlerInfo> beforeTargets;
-    private List<MethodMapping.HandlerInfo> afterTargets;
-
-    // TODO: should be renamed to MethodParamsSaver.
-    private LocalVarsSaver saver;
-
-    public InstrumentCallsGenerator(int opcode, String owner, String name, String desc) {
-      this.opcode = opcode;
-      this.owner = owner;
-      this.name = name;
-      this.orgDesc = desc;
-      this.listenerDesc = orgDesc.replace(")", "J)");
-      this.fullMethodName = name + orgDesc;
-
-      beforeTargets = methods.getTargetsFor(fullMethodName, MethodMapping.E_BEFORE_METHOD);
-      afterTargets = methods.getTargetsFor(fullMethodName, MethodMapping.E_AFTER_METHOD);
-    }
-
-    public void generateCall() {
-      if (beforeTargets != null || afterTargets != null) {
-        saver = new LocalVarsSaver(mv, fullMethodName, localVarsSorter);
-        saver.saveStack();
-      }
-      if (opcode != Opcodes.INVOKESTATIC) {
-        // 'Dup' as many times as it would require to make put listener calls.
-        if (beforeTargets != null) {
-          for (MethodMapping.HandlerInfo tgt : beforeTargets) {
-            dup();
-          }
-        }
-        if (afterTargets != null) {
-          for (MethodMapping.HandlerInfo tgt : afterTargets) {
-            dup();
-          }
-        }
-      }
-      if (beforeTargets != null) {
-        genListenerCall(beforeTargets);
-        saver.loadStack();
-      }
-      mv.visitMethodInsn(opcode, owner, name, orgDesc);
-      if (afterTargets != null) {
-        genListenerCall(afterTargets);
-      }
-    }
-
-    private void genListenerCall(List<MethodMapping.HandlerInfo> targets) {
-      for (MethodMapping.HandlerInfo target : targets) {
-        Label labelSkip = new Label();
-        Label labelAfter = new Label();
-        boolean exact = target.isExact();
-        boolean callGenerated = false;
-        boolean listenStatic = (opcode == Opcodes.INVOKESTATIC);
-        String actualDesc = listenerDesc;
-
-        if (!listenStatic) {
-          actualDesc = addClassAsFirstArgument(target.getWatchedClass(), actualDesc);
-        }
-        if (!exact && !listenStatic) {
-          // Skip the event if 'this' is not a child of the base class.
-          dup();
-          instanceOf(Type.getObjectType(target.getWatchedClass()));
-          visitJumpInsn(Opcodes.IFEQ, labelSkip);
-          checkCast(Type.getObjectType(target.getWatchedClass()));
-        }
-        if (!exact || target.getWatchedClass().equals(owner)) {
-          saver.loadStack();
-          push(genCodePosition());
-          visitListenerCall(target.getHandler(), actualDesc);
-          callGenerated = true;
-        }
-        if (callGenerated && !listenStatic) {
-          visitJumpInsn(Opcodes.GOTO, labelAfter);
-          visitLabel(labelSkip);
-          pop();
-          visitLabel(labelAfter);
-        }
-      }
-    }
-
-    public boolean hasBeforeTargets() {
-      return beforeTargets != null;
-    }
-
-    public boolean hasAfterTargets() {
-      return afterTargets != null;
-    }
   }
 
   private static Type getSourceSlotType(int opcode) {
