@@ -16,8 +16,8 @@
 package org.jtsan;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Keeps a mapping of system methods to their interception handlers.
@@ -29,27 +29,52 @@ public class MethodMapping {
   public static final int E_BEFORE_METHOD = 1;
   public static final int E_AFTER_METHOD = 2;
 
-  private final ConcurrentHashMap<EventInfo, String> map;
+  private final ConcurrentHashMap<EventInfo, LinkedList<HandlerInfo>> map;
 
   /**
-   * A hashable tuple of (className, methodName, eventType).
+   * Keeps information about target handler method and the source class that
+   * matches to it.
+   */
+  public static final class HandlerInfo {
+    private final String handler;
+    private final String watchedClass;
+    private final boolean exact;
+
+    public HandlerInfo(String cls, String handler, boolean exact) {
+      this.handler = handler;
+      this.watchedClass = cls;
+      this.exact = exact;
+    }
+
+    public boolean isExact() {
+      return exact;
+    }
+
+    public String getHandler() {
+      return handler;
+    }
+
+    public String getWatchedClass() {
+      return watchedClass;
+    }
+  }
+
+  /**
+   * A hashable tuple of (methodName, eventType).
    */
   private static class EventInfo {
-    private final String className;
     private final String methodName;
     private final int eventType;
     private final int hash;
 
-    public EventInfo(String cls, String meth, int type) {
-      this.className = cls;
+    public EventInfo(String meth, int type) {
       this.methodName = meth;
       this.eventType = type;
       this.hash = calculateHashCode();
     }
 
     private int calculateHashCode() {
-      int h = className == null ? 2 : className.hashCode();
-      h = 31 * h + (methodName == null ? 3 : methodName.hashCode());
+      int h = methodName == null ? 3 : methodName.hashCode();
       h = 7 * h + 5 * eventType;
       return h;
     }
@@ -59,9 +84,7 @@ public class MethodMapping {
         return false;
       }
       EventInfo e = (EventInfo)obj;
-      return (className != null &&
-          className.equals(e.className) &&
-          methodName != null &&
+      return (methodName != null &&
           methodName.equals(e.methodName) &&
           e.eventType == eventType);
     }
@@ -72,24 +95,39 @@ public class MethodMapping {
   }
 
   public MethodMapping() {
-    map = new ConcurrentHashMap<EventInfo, String>(10);
+    map = new ConcurrentHashMap<EventInfo, LinkedList<HandlerInfo>>(10);
   }
 
-  public void registerEvent(
-      String className, String methodName, int eventType, String eventMethod) {
-    map.put(new EventInfo(className, methodName, eventType), eventMethod);
+  public synchronized void registerEvent(
+      String className, String methodName, int eventType, String eventMethod, boolean exact) {
+    EventInfo ei = new EventInfo(methodName, eventType);
+    LinkedList<HandlerInfo> lst = map.get(ei);
+    HandlerInfo handler = new HandlerInfo(className, eventMethod, exact);
+    if (lst == null) {
+      lst = new LinkedList<HandlerInfo>();
+      map.put(ei, lst);
+    }
+    lst.addLast(handler);
   }
 
   public void registerBefore(String className, String methodName, String eventMethod) {
-    registerEvent(className, methodName, E_BEFORE_METHOD, eventMethod);
+    registerEvent(className, methodName, E_BEFORE_METHOD, eventMethod, false /* exact */);
+  }
+
+  public void registerBeforeExact(String className, String methodName, String eventMethod) {
+    registerEvent(className, methodName, E_BEFORE_METHOD, eventMethod, true /* exact */);
   }
 
   public void registerAfter(String className, String methodName, String eventMethod) {
-    registerEvent(className, methodName, E_AFTER_METHOD, eventMethod);
+    registerEvent(className, methodName, E_AFTER_METHOD, eventMethod, false /* exact */);
   }
 
-  public String getTargetFor(String className, String name, int eventType) {
-    return map.get(new EventInfo(className, name, eventType));
+  public void registerAfterExact(String className, String methodName, String eventMethod) {
+    registerEvent(className, methodName, E_AFTER_METHOD, eventMethod, true /* exact */);
+  }
+
+  public List<HandlerInfo> getTargetsFor(String name, int eventType) {
+    return map.get(new EventInfo(name, eventType));
 
   }
 }

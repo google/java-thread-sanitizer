@@ -320,12 +320,6 @@ public class MethodTransformer extends AdviceAdapter {
   }
 
   public void visitMethodInsn(int opcode, String owner, String name, String desc) {
-    String fullMethodName = name + desc;
-    String beforeTarget =
-      methods.getTargetFor(owner, fullMethodName, MethodMapping.E_BEFORE_METHOD);
-    String afterTarget =
-      methods.getTargetFor(owner, fullMethodName, MethodMapping.E_AFTER_METHOD);
-
     // Capture code position on the call.
     push(genCodePosition());
     visitListenerCall("beforeCall", "(J)V");
@@ -338,18 +332,7 @@ public class MethodTransformer extends AdviceAdapter {
 
     // Capture special (=registered) calls with their parameters.
     InstrumentCallsGenerator callsGen = new InstrumentCallsGenerator(opcode, owner, name, desc);
-    callsGen.initSaveStack(fullMethodName, beforeTarget, afterTarget);
-    if (opcode == Opcodes.INVOKESTATIC) {
-      callsGen.generateCall(desc.replace(")", "J)"));
-    } else {
-      if (afterTarget != null) {
-        dup(); // Dup 'this' reference for the after-call instrumentation.
-      }
-      if (beforeTarget != null) {
-        dup(); // Dup 'this' reference for the before-call instrumentation.
-      }
-      callsGen.generateCall(addClassAsFirstArgument(owner, desc).replace(")", "J)"));
-    }
+    callsGen.generateCall();
   }
 
   private void visitListenerCall(String method, String descr) {
@@ -364,9 +347,11 @@ public class MethodTransformer extends AdviceAdapter {
     private final int opcode;
     private final String owner;
     private final String name;
-    private final String desc;
-    private String beforeTarget;
-    private String afterTarget;
+    private final String orgDesc;
+    private final String listenerDesc;
+    private final String fullMethodName;
+    private List<MethodMapping.HandlerInfo> beforeTargets;
+    private List<MethodMapping.HandlerInfo> afterTargets;
 
     // TODO: should be renamed to MethodParamsSaver.
     private LocalVarsSaver saver;
@@ -375,31 +360,82 @@ public class MethodTransformer extends AdviceAdapter {
       this.opcode = opcode;
       this.owner = owner;
       this.name = name;
-      this.desc = desc;
+      this.orgDesc = desc;
+      this.listenerDesc = orgDesc.replace(")", "J)");
+      this.fullMethodName = name + orgDesc;
+
+      beforeTargets = methods.getTargetsFor(fullMethodName, MethodMapping.E_BEFORE_METHOD);
+      afterTargets = methods.getTargetsFor(fullMethodName, MethodMapping.E_AFTER_METHOD);
     }
 
-    public void initSaveStack(String fullMethodName, String beforeTarget, String afterTarget) {
-      this.beforeTarget = beforeTarget;
-      this.afterTarget = afterTarget;
-      if (beforeTarget != null || afterTarget != null) {
+    public void generateCall() {
+      if (beforeTargets != null || afterTargets != null) {
         saver = new LocalVarsSaver(mv, fullMethodName, localVarsSorter);
         saver.saveStack();
       }
+      if (opcode != Opcodes.INVOKESTATIC) {
+        // 'Dup' as many times as it would require to make put listener calls.
+        if (beforeTargets != null) {
+          for (MethodMapping.HandlerInfo tgt : beforeTargets) {
+            dup();
+          }
+        }
+        if (afterTargets != null) {
+          for (MethodMapping.HandlerInfo tgt : afterTargets) {
+            dup();
+          }
+        }
+      }
+      if (beforeTargets != null) {
+        genListenerCall(beforeTargets);
+        saver.loadStack();
+      }
+      mv.visitMethodInsn(opcode, owner, name, orgDesc);
+      if (afterTargets != null) {
+        genListenerCall(afterTargets);
+      }
     }
 
-    public void generateCall(String listenDesc) {
-      if (beforeTarget != null) {
-        saver.loadStack();
-        push(genCodePosition());
-        visitListenerCall(beforeTarget, listenDesc);
-        saver.loadStack();
+    private void genListenerCall(List<MethodMapping.HandlerInfo> targets) {
+      for (MethodMapping.HandlerInfo target : targets) {
+        Label labelSkip = new Label();
+        Label labelAfter = new Label();
+        boolean exact = target.isExact();
+        boolean callGenerated = false;
+        boolean listenStatic = (opcode == Opcodes.INVOKESTATIC);
+        String actualDesc = listenerDesc;
+
+        if (!listenStatic) {
+          actualDesc = addClassAsFirstArgument(target.getWatchedClass(), actualDesc);
+        }
+        if (!exact && !listenStatic) {
+          // Skip the event if 'this' is not a child of the base class.
+          dup();
+          instanceOf(Type.getObjectType(target.getWatchedClass()));
+          visitJumpInsn(Opcodes.IFEQ, labelSkip);
+          checkCast(Type.getObjectType(target.getWatchedClass()));
+        }
+        if (!exact || target.getWatchedClass().equals(owner)) {
+          saver.loadStack();
+          push(genCodePosition());
+          visitListenerCall(target.getHandler(), actualDesc);
+          callGenerated = true;
+        }
+        if (callGenerated && !listenStatic) {
+          visitJumpInsn(Opcodes.GOTO, labelAfter);
+          visitLabel(labelSkip);
+          pop();
+          visitLabel(labelAfter);
+        }
       }
-      mv.visitMethodInsn(opcode, owner, name, desc);
-      if (afterTarget != null) {
-        saver.loadStack();
-        push(genCodePosition());
-        visitListenerCall(afterTarget, listenDesc);
-      }
+    }
+
+    public boolean hasBeforeTargets() {
+      return beforeTargets != null;
+    }
+
+    public boolean hasAfterTargets() {
+      return afterTargets != null;
     }
   }
 
