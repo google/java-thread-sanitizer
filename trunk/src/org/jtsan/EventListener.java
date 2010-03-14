@@ -221,10 +221,10 @@ public class EventListener {
   public static void rdaApiNoOp(Object obj, long pc) {
     // out.println("T" + tid() + " API_NO_OP " + pc);
   }
-  public static void rdaApiExectRaceBegin(long pc) {
+  public static void rdaApiExpectRaceBegin(long pc) {
     out.println("EXPECT_RACE_BEGIN " + tid() + " " + pc + " 0 0");
   }
-  public static void rdaApiExectRaceEnd(long pc) {
+  public static void rdaApiExpectRaceEnd(long pc) {
     out.println("EXPECT_RACE_END " + tid() + " " + pc + " 0 0");
   }
   public static void rdaApiPrintStackTrace(long pc) {
