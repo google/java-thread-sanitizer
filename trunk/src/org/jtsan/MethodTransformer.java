@@ -353,12 +353,6 @@ public class MethodTransformer extends AdviceAdapter {
     push(genCodePosition());
     visitListenerCall("beforeCall", "(J)V");
 
-    // Proceed an ordinary call without extra instrumentation.
-    if (opcode == Opcodes.INVOKESPECIAL) {
-      mv.visitMethodInsn(opcode, owner, name, desc);
-      return;
-    }
-
     // Capture special (=registered) calls with their parameters.
     InstrumentCalls callsGen =
         new InstrumentCalls(new GenerationCallback(opcode, owner, name, desc),
