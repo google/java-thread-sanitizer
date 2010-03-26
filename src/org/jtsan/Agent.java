@@ -42,6 +42,11 @@ public class Agent implements ClassFileTransformer {
   // Ignore list to eliminate endless recursion.
   private static String[] ignore = new String[] { "java", "sun/", "org/jtsan" };
 
+  // A list of exceptions for the ignore list.
+  private static String[] noignore = new String[] {
+      //"java/util/concurrent/locks/ReentrantReadWriteLock"
+  };
+
   // System methods to intercept.
   private static MethodMapping syncMethods = null;
 
@@ -94,6 +99,11 @@ public class Agent implements ClassFileTransformer {
   private boolean inIgnoreList(String className) {
     for (int i = 0; i < ignore.length; i++) {
       if (className.startsWith(ignore[i])) {
+        for (int j = 0; j < noignore.length; j++) {
+          if (className.startsWith(noignore[j])) {
+            return false;
+          }
+        }
         return true;
       }
     }
@@ -128,7 +138,8 @@ public class Agent implements ClassFileTransformer {
       return res;
     } catch (Exception e) {
       System.out.println(
-          "Exception occured during transformation. Transformed bytes are discarded.");
+          "Exception occured during transformation of class " + className +
+          ". Transformed bytes are discarded.");
       e.printStackTrace();
       return bytes;
     }
@@ -168,6 +179,10 @@ public class Agent implements ClassFileTransformer {
                       "lock()V", "jucRRWL_WriteLock_lock");
     map.registerBefore("java/util/concurrent/locks/ReentrantReadWriteLock$WriteLock",
                        "unlock()V", "jucRRWL_WriteLock_unlock");
+
+    map.registerBeforeExact("java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock",
+                            "<init>(Ljava/util/concurrent/locks/ReentrantReadWriteLock;)V",
+                            "juclReadLockConstructor");
 
     // java.util.concurrent.locks.ReentrantLock
     // TODO(kcc): support tryLock().

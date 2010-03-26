@@ -243,4 +243,7 @@ public class EventListener {
     out.println("#>" + str);
   }
 
+  public static void juclReadLockConstructor(ReentrantReadWriteLock.ReadLock readLock,
+      ReentrantReadWriteLock outerLock, long pc) {
+  }
 }
