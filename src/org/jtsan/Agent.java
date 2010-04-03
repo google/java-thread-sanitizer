@@ -212,8 +212,7 @@ public class Agent implements ClassFileTransformer {
 
       /*
        * Compose a chain of visitors:
-       *   AnalyzerAdapter -> MethodTransformer -> LocalVariablesSorter -> MethodVisitor
-       *   (operator overloading would be nice, huh?)
+       *   MethodTransformer -> LocalVariablesSorter -> MethodVisitor
        */
       public MethodVisitor visitMethod(
           int access, String name, String desc,
@@ -226,10 +225,8 @@ public class Agent implements ClassFileTransformer {
         MethodTransformer transformer = new MethodTransformer(
             myself, sorter, access, name, fullMethodName, desc, source, syncMethods, codePos,
             volatileFields);
-        AnalyzerAdapter aa = new AnalyzerAdapter(className, access, name, desc, transformer);
         transformer.setLocalVarsSorter(sorter);
-        transformer.setStackAnalyzer(aa);
-        return aa;
+        return transformer;
       }
 
       @Override

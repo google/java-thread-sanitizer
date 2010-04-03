@@ -26,17 +26,30 @@ import java.util.Vector;
  * @author Egor Pasko
  */
 public class LocalVarsSaver {
-  private final Vector<Type> types;
-  private final Vector<Integer> vars;
   private final MethodVisitor mv;
   private final LocalVariablesSorter lvs;
+  private Vector<Type> types;
+  private Vector<Integer> vars;
 
-  public LocalVarsSaver(
-      MethodVisitor mv, String fullMethodName, LocalVariablesSorter lvs) {
+  public LocalVarsSaver(MethodVisitor mv, LocalVariablesSorter lvs) {
     this.mv = mv;
     this.lvs = lvs;
-    this.types = parseMethodName(fullMethodName);
-    this.vars = newLocalVarsFromTypes(types, lvs);
+  }
+
+  public void initFromMethodDesc(String fullMethodName) {
+    types = parseMethodName(fullMethodName);
+    vars = newLocalVarsFromTypes(types, lvs);
+  }
+
+  public void initFromTypeDesc(String desc) {
+    char c = desc.charAt(0);
+    types = new Vector<Type>();
+    if (c == 'L' || c == '[') {
+      types.add(Type.getObjectType("java/lang/Object"));
+    } else {
+      types.add(typeByChar(c));
+    }
+    vars = newLocalVarsFromTypes(types, lvs);
   }
 
   private static boolean inParams(int i, String methodName) {
@@ -52,42 +65,48 @@ public class LocalVarsSaver {
     return vars;
   }
 
+  private static Type typeByChar(char ch) {
+    switch (ch) {
+      case 'I':
+        return Type.INT_TYPE;
+      case 'J':
+        return Type.LONG_TYPE;
+      case 'F':
+        return Type.FLOAT_TYPE;
+      case 'D':
+        return Type.DOUBLE_TYPE;
+      case 'B':
+        return Type.BYTE_TYPE;
+      case 'C':
+        return Type.CHAR_TYPE;
+      case 'S':
+        return Type.SHORT_TYPE;
+      case 'Z':
+        return Type.BOOLEAN_TYPE;
+      default:
+        throw new UnsupportedOperationException(
+            "saving/loading type " + ch + " is not supported");
+    }
+  }
+
   private static Vector<Type> parseMethodName(String meth) {
     Vector<Type> types = new Vector<Type>();
-    for (int i = meth.indexOf('('); inParams(i, meth); i++) {
+    for (int i = meth.indexOf('(') + 1; inParams(i, meth); i++) {
       char ch = meth.charAt(i);
       Type type;
-      switch (ch) {
-        case '(':
-          continue;
-        case 'I':
-          type = Type.INT_TYPE;
-          break;
-        case 'J':
-          type = Type.LONG_TYPE;
-          break;
-        case 'L':
-          StringBuilder sb = new StringBuilder();
-          for (int j = i + 1; inParams(j, meth); j++) {
-            char och = meth.charAt(j);
-            if (och == ';') {
-              i = j;
-              break;
-            }
-            sb.append(och);
+      if (ch != 'L') {
+        type = typeByChar(ch);
+      } else {
+        StringBuilder sb = new StringBuilder();
+        for (int j = i + 1; inParams(j, meth); j++) {
+          char och = meth.charAt(j);
+          if (och == ';') {
+            i = j;
+            break;
           }
-          type = Type.getObjectType(sb.toString());
-          break;
-        case 'F':
-          type = Type.FLOAT_TYPE;
-          break;
-        case 'D':
-          type = Type.DOUBLE_TYPE;
-          break;
-        default:
-          // Currently not supported types are: [, B, C, S, Z.
-          throw new UnsupportedOperationException(
-              "saving/loading type " + ch + " is not supported");
+          sb.append(och);
+        }
+        type = Type.getObjectType(sb.toString());
       }
       types.add(type);
     }

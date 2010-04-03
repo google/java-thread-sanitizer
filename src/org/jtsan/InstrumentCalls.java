@@ -43,8 +43,6 @@ public class InstrumentCalls {
 
   private List<MethodMapping.HandlerInfo> beforeTargets;
   private List<MethodMapping.HandlerInfo> afterTargets;
-
-  // TODO: should be renamed to MethodParamsSaver.
   private LocalVarsSaver saver;
 
   public InstrumentCalls(MethodTransformer.GenerationCallback cb,
