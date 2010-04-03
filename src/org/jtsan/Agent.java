@@ -129,7 +129,7 @@ public class Agent implements ClassFileTransformer {
       // positions sequential and non-conflicting.
       synchronized(this) {
         ca = newMethodTransformAdapter(this, cw, className, codePos, volatileFields);
-        cr.accept(ca, ClassReader.EXPAND_FRAMES);
+        cr.accept(ca, ClassReader.SKIP_FRAMES);
         res = cw.toByteArray();
         if (debugClassPrefix != null && className.startsWith(debugClassPrefix)) {
           printTransformedClass(res);
