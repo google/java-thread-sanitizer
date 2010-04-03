@@ -107,6 +107,8 @@ public class EventListener {
     }
   }
 
+  public static void ofa(Object obj) {}
+
   public static void objectFieldAccess(Object obj, boolean isWrite,
       String fieldName, long pc, boolean isVolatile) {
     // TODO: make uniqueId a 64 bit value: higher half to be object ID, lower

@@ -45,8 +45,6 @@ public class MethodTransformer extends AdviceAdapter {
 
   private LocalVariablesSorter localVarsSorter;
 
-  private AnalyzerAdapter stackAnalyzer;
-
   private int line;
 
   public MethodTransformer(Agent agent, MethodVisitor mv,
@@ -65,10 +63,6 @@ public class MethodTransformer extends AdviceAdapter {
 
   public void setLocalVarsSorter(LocalVariablesSorter lvs) {
     localVarsSorter = lvs;
-  }
-
-  public void setStackAnalyzer(AnalyzerAdapter analyzer) {
-    stackAnalyzer = analyzer;
   }
 
   private static boolean isArrayStore(int opcode) {
@@ -174,51 +168,25 @@ public class MethodTransformer extends AdviceAdapter {
     return volatileFields.contains(fname);
   }
 
-  private void visitObjectFieldAccess(String name, boolean isWrite, boolean isVolatile) {
+  private void visitObjectFieldAccess(
+      String name, String desc, boolean isWrite, boolean isVolatile) {
     long pc = genCodePosition();
-    if (!isWrite) {
+    LocalVarsSaver saver = new LocalVarsSaver(mv, localVarsSorter);
+    if (isWrite) {
+      saver.initFromTypeDesc(desc);
+      saver.saveStack();
+      dup();
+      push(1);
+    } else {
       dup();
       push(0);
-      push(name);
-      push(pc);
-      push(isVolatile);
-      visitObjectFieldAccessCall();
-    } else {
-      List stack = stackAnalyzer.stack;
-      int size = stack.size();
-      if (stack.get(size - 2) == Opcodes.UNINITIALIZED_THIS) {
-        // Do not instrument writes to members of 'this' in <init>. I kindly ask you to not to write
-        // to uninitialized 'this' from more than one thread, please.
-        return;
-      }
-      Object slot = stack.get(size - 1);
-      if (slot == Opcodes.INTEGER) {
-        int storedVar = localVarsSorter.newLocal(Type.INT_TYPE);
-        mv.visitVarInsn(ISTORE, storedVar);
-        dup();
-        push(1);
-        push(name);
-        push(pc);
-        push(isVolatile);
-        visitObjectFieldAccessCall();
-        mv.visitVarInsn(ILOAD, storedVar);
-      } else if (slot instanceof String) {
-        // All objrefs are represented as their string names.
-        String obj = (String)slot;
-        int storedVar = localVarsSorter.newLocal(Type.getObjectType(obj));
-        mv.visitVarInsn(ASTORE, storedVar);
-        dup();
-        push(1);
-        push(name);
-        push(pc);
-        push(isVolatile);
-        visitObjectFieldAccessCall();
-        mv.visitVarInsn(ALOAD, storedVar);
-      }
-      // TODO: instrument other types of slot writes:
-      //   Opcodes.FLOAT,
-      //   Opcodes.LONG,
-      //   Opcodes.DOUBLE
+    }
+    push(name);
+    push(pc);
+    push(isVolatile);
+    visitObjectFieldAccessCall();
+    if (isWrite) {
+      saver.loadStack();
     }
   }
 
@@ -257,10 +225,17 @@ public class MethodTransformer extends AdviceAdapter {
       isStatic = false;
       isWrite = true;
     }
-    if (isStatic) {
-      visitStaticFieldAccess(owner + "." + name, isWrite);
-    } else {
-      visitObjectFieldAccess(name, isWrite, isVolatileField(owner + "." + name));
+    if (!"<init>".equals(methodName)) {
+      // The method <init> may save values to fields of an uninitialized object.
+      // We cannot pass an 'ininitialized this' to an interceptor without
+      // causing a VerifyError. 'Uninitialized this' can be detected using
+      // StackAnalyzer with precomputed stack frame info by ClassWriter. Skip
+      // this process for simlicity.
+      if (isStatic) {
+        visitStaticFieldAccess(owner + "." + name, isWrite);
+      } else {
+        visitObjectFieldAccess(name, desc, isWrite, isVolatileField(owner + "." + name));
+      }
     }
     super.visitFieldInsn(opcode, owner, name, desc);
   }
@@ -332,7 +307,9 @@ public class MethodTransformer extends AdviceAdapter {
     }
 
     public LocalVarsSaver createLocalVarsSaver() {
-      return new LocalVarsSaver(mv, desc, localVarsSorter);
+      LocalVarsSaver saver = new LocalVarsSaver(mv, localVarsSorter);
+      saver.initFromMethodDesc(desc);
+      return saver;
     }
 
     public void visitMethodInsn() {
