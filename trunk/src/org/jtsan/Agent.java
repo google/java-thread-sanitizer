@@ -121,8 +121,7 @@ public class Agent implements ClassFileTransformer {
 
       ClassAdapter ca;
       ClassReader cr = new ClassReader(bytes);
-      ClassWriter cw = new ClassWriter(cr,
-          ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+      ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
 
       byte[] res;
       // Allow no more than a single instrumentation at a time to making code
