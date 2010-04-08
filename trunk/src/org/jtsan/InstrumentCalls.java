@@ -63,30 +63,26 @@ public class InstrumentCalls {
   }
 
   public void generateCall() {
-    if (beforeTargets != null || afterTargets != null) {
+    int beforeListeners = beforeTargets == null ? 0 : countListenerCalls(beforeTargets);
+    int afterListeners = afterTargets == null ? 0 : countListenerCalls(afterTargets);
+    int listeners = beforeListeners + afterListeners;
+    if (listeners > 0) {
       saver = cb.createLocalVarsSaver();
       saver.saveStack();
     }
     if (opcode != Opcodes.INVOKESTATIC) {
-      // 'Dup' as many times as it would require to make put listener calls.
-      if (beforeTargets != null) {
-        for (MethodMapping.HandlerInfo tgt : beforeTargets) {
-          gen.dup();
-        }
-      }
-      if (afterTargets != null) {
-        for (MethodMapping.HandlerInfo tgt : afterTargets) {
-          gen.dup();
-        }
+      // 'Dup' as many times as it would require to make listener calls.
+      for (int i = 0; i < listeners; i++) {
+        gen.dup();
       }
     }
-    if (beforeTargets != null) {
-      genListenerCall(beforeTargets);
+    if (beforeListeners > 0) {
+      genListenerCalls(beforeTargets);
       saver.loadStack();
     }
     cb.visitMethodInsn();
-    if (afterTargets != null) {
-      genListenerCall(afterTargets);
+    if (afterListeners > 0) {
+      genListenerCalls(afterTargets);
     }
   }
 
@@ -94,7 +90,17 @@ public class InstrumentCalls {
     return desc.replace("(", "(L" + className + ";");
   }
 
-  private void genListenerCall(List<MethodMapping.HandlerInfo> targets) {
+  private int countListenerCalls(List<MethodMapping.HandlerInfo> targets) {
+    int ret = 0;
+    for (MethodMapping.HandlerInfo target : targets) {
+      if (!target.isExact() || target.getWatchedClass().equals(owner)) {
+        ret++;
+      }
+    }
+    return ret;
+  }
+
+  private void genListenerCalls(List<MethodMapping.HandlerInfo> targets) {
     for (MethodMapping.HandlerInfo target : targets) {
       Label labelSkip = new Label();
       Label labelAfter = new Label();
