@@ -44,7 +44,7 @@ public class Agent implements ClassFileTransformer {
 
   // A list of exceptions for the ignore list.
   private static String[] noignore = new String[] {
-      //"java/util/concurrent/locks/ReentrantReadWriteLock"
+      "java/util/concurrent/locks/ReentrantReadWriteLock"
   };
 
   // System methods to intercept.
@@ -168,8 +168,6 @@ public class Agent implements ClassFileTransformer {
 
     // java.util.concurrent.locks.ReentrantReadWriteLock
     // TODO(kcc): support tryLock().
-    // TODO(kcc): send events based on the enclosing object (ReentrantReadWriteLock)
-    // instead of the ReadLock/WriteLock object.
     map.registerAfter("java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock",
                       "lock()V", "jucRRWL_ReadLock_lock");
     map.registerBefore("java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock",
@@ -182,6 +180,10 @@ public class Agent implements ClassFileTransformer {
     map.registerBeforeExact("java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock",
                             "<init>(Ljava/util/concurrent/locks/ReentrantReadWriteLock;)V",
                             "juclReadLockConstructor");
+
+    map.registerBeforeExact("java/util/concurrent/locks/ReentrantReadWriteLock$WriteLock",
+                            "<init>(Ljava/util/concurrent/locks/ReentrantReadWriteLock;)V",
+                            "juclWriteLockConstructor");
 
     // java.util.concurrent.locks.ReentrantLock
     // TODO(kcc): support tryLock().
