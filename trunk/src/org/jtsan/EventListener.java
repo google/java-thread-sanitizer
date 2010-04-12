@@ -17,9 +17,11 @@ package org.jtsan;
 
 import java.io.PrintWriter;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
+
 
 /**
  * Performs actions on intercepted events.
@@ -28,6 +30,20 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class EventListener {
   private static PrintWriter out;
+
+  static class ReadLockMap extends
+      ConcurrentHashMap<ReentrantReadWriteLock.ReadLock, ReentrantReadWriteLock> {
+    public ReadLockMap() { super(10); }
+  }
+
+  static class WriteLockMap extends
+      ConcurrentHashMap<ReentrantReadWriteLock.WriteLock, ReentrantReadWriteLock> {
+    public WriteLockMap() { super(10); }
+  }
+
+  private static ReadLockMap readLockMap = new ReadLockMap();
+
+  private static WriteLockMap writeLockMap = new WriteLockMap();
 
   public static void setPrinter(PrintWriter w) {
     out = w;
@@ -208,18 +224,17 @@ public class EventListener {
     WaitOnObject(sem, pc);
   }
 
-  // TODO(kcc): need to send events based on the enclosing ReentrantReadWriteLock object.
   public static void jucRRWL_ReadLock_lock(ReentrantReadWriteLock.ReadLock lock, long pc){
-    ReadLock(lock, pc);
+    ReadLock(readLockMap.get(lock), pc);
   }
   public static void jucRRWL_ReadLock_unlock(ReentrantReadWriteLock.ReadLock lock, long pc){
-    Unlock(lock, pc);
+    Unlock(readLockMap.get(lock), pc);
   }
   public static void jucRRWL_WriteLock_lock(ReentrantReadWriteLock.WriteLock lock, long pc){
-    WriteLock(lock, pc);
+    WriteLock(writeLockMap.get(lock), pc);
   }
   public static void jucRRWL_WriteLock_unlock(ReentrantReadWriteLock.WriteLock lock, long pc){
-    Unlock(lock, pc);
+    Unlock(writeLockMap.get(lock), pc);
   }
 
   public static void jucRL_lock(ReentrantLock lock, long pc){
@@ -247,5 +262,11 @@ public class EventListener {
 
   public static void juclReadLockConstructor(ReentrantReadWriteLock.ReadLock readLock,
       ReentrantReadWriteLock outerLock, long pc) {
+    readLockMap.put(readLock, outerLock);
+  }
+
+  public static void juclWriteLockConstructor(ReentrantReadWriteLock.WriteLock writeLock,
+      ReentrantReadWriteLock outerLock, long pc) {
+    writeLockMap.put(writeLock, outerLock);
   }
 }
