@@ -53,24 +53,24 @@ public class EventListener {
     return Thread.currentThread().getId() - 1;
   }
 
-  static void SignalOnObject(Object obj, long pc){
+  static void signalOnObject(Object obj, long pc){
     out.println("SIGNAL " + tid() + " " + pc + " " +
         System.identityHashCode(obj) + " 0");
   }
-  static void WaitOnObject(Object obj, long pc){
+  static void waitOnObject(Object obj, long pc){
     out.println("WAIT " + tid() + " " + pc + " " +
         System.identityHashCode(obj) + " 0");
   }
 
-  static void WriteLock(Object obj, long pc) {
+  static void writeLock(Object obj, long pc) {
     out.println("WRITER_LOCK " + tid() + " " + pc + " " +
         System.identityHashCode(obj) + " 0");
   }
-  static void ReadLock(Object obj, long pc) {
+  static void readLock(Object obj, long pc) {
     out.println("READER_LOCK " + tid() + " " + pc + " " +
         System.identityHashCode(obj) + " 0");
   }
-  static void Unlock(Object obj, long pc) {
+  static void unlock(Object obj, long pc) {
     out.println("UNLOCK " + tid() + " " + pc + " " +
         System.identityHashCode(obj) + " 0");
   }
@@ -149,11 +149,11 @@ public class EventListener {
   }
 
   public static void monitorEnter(Object obj, long pc) {
-    WriteLock(obj, pc);
+    writeLock(obj, pc);
   }
 
   public static void monitorExit(Object obj, long pc) {
-    Unlock(obj, pc);
+    unlock(obj, pc);
   }
 
   public static void arrayLoad(Object array, int index) {
@@ -174,7 +174,7 @@ public class EventListener {
   }
 
   public static void jlObjectNotify(Object obj, long pc) {
-    SignalOnObject(obj, pc);
+    signalOnObject(obj, pc);
   }
 
   public static void jlSystemArrayCopy(
@@ -209,53 +209,61 @@ public class EventListener {
   }
 
   public static void jucCountDownLatch_countDown(CountDownLatch latch, long pc){
-    SignalOnObject(latch, pc);
+    signalOnObject(latch, pc);
   }
 
   public static void jucCountDownLatch_await(CountDownLatch latch, long pc){
-    WaitOnObject(latch, pc);
+    waitOnObject(latch, pc);
   }
 
   public static void jucSemaphore_release(Semaphore sem, long pc){
-    SignalOnObject(sem, pc);
+    signalOnObject(sem, pc);
   }
 
   public static void jucSemaphore_acquire(Semaphore sem, long pc){
-    WaitOnObject(sem, pc);
+    waitOnObject(sem, pc);
   }
 
   public static void jucRRWL_ReadLock_lock(ReentrantReadWriteLock.ReadLock lock, long pc){
-    ReadLock(readLockMap.get(lock), pc);
+    readLock(readLockMap.get(lock), pc);
   }
+
   public static void jucRRWL_ReadLock_unlock(ReentrantReadWriteLock.ReadLock lock, long pc){
-    Unlock(readLockMap.get(lock), pc);
+    unlock(readLockMap.get(lock), pc);
   }
+
   public static void jucRRWL_WriteLock_lock(ReentrantReadWriteLock.WriteLock lock, long pc){
-    WriteLock(writeLockMap.get(lock), pc);
+    writeLock(writeLockMap.get(lock), pc);
   }
+
   public static void jucRRWL_WriteLock_unlock(ReentrantReadWriteLock.WriteLock lock, long pc){
-    Unlock(writeLockMap.get(lock), pc);
+    unlock(writeLockMap.get(lock), pc);
   }
 
   public static void jucRL_lock(ReentrantLock lock, long pc){
-    WriteLock(lock, pc);
+    writeLock(lock, pc);
   }
+
   public static void jucRL_unlock(ReentrantLock lock, long pc){
-    Unlock(lock, pc);
+    unlock(lock, pc);
   }
 
   public static void rdaApiNoOp(Object obj, long pc) {
     // out.println("T" + tid() + " API_NO_OP " + pc);
   }
+
   public static void rdaApiExpectRaceBegin(long pc) {
     out.println("EXPECT_RACE_BEGIN " + tid() + " " + pc + " 0 0");
   }
+
   public static void rdaApiExpectRaceEnd(long pc) {
     out.println("EXPECT_RACE_END " + tid() + " " + pc + " 0 0");
   }
+
   public static void rdaApiPrintStackTrace(long pc) {
     out.println("STACK_TRACE " + tid() + " " + pc + " 0 0");
   }
+
   public static void rdaApiPrint(String str, long pc) {
     out.println("#>" + str);
   }
