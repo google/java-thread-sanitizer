@@ -313,7 +313,7 @@ public class MethodTransformer extends AdviceAdapter {
     }
 
     public void visitMethodInsn() {
-      mv.visitMethodInsn(opcode, owner, name, desc);
+      superVisitMethodInsn(opcode, owner, name, desc);
     }
 
     public long codePosition() {
@@ -337,6 +337,10 @@ public class MethodTransformer extends AdviceAdapter {
     callsGen.setBeforeTargets(methods.getTargetsFor(name + desc, MethodMapping.E_BEFORE_METHOD));
     callsGen.setAfterTargets(methods.getTargetsFor(name + desc, MethodMapping.E_AFTER_METHOD));
     callsGen.generateCall();
+  }
+
+  public void superVisitMethodInsn(int opcode, String owner, String name, String desc) {
+    super.visitMethodInsn(opcode, owner, name, desc);
   }
 
   private void visitListenerCall(String method, String descr) {
