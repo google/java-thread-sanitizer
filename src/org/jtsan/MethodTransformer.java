@@ -36,6 +36,7 @@ public class MethodTransformer extends AdviceAdapter {
   private final CodePos codePos;
   private final DescrCallback lazyDescr;
   private final Set<String> volatileFields;
+  private final boolean methodIsStatic;
 
   private static final int[] storeOpcodes =
     {IASTORE, LASTORE, FASTORE, DASTORE, AASTORE, BASTORE, CASTORE, SASTORE};
@@ -58,6 +59,7 @@ public class MethodTransformer extends AdviceAdapter {
     this.methodName = name;
     this.codePos = codePos;
     this.volatileFields = volatileFields;
+    this.methodIsStatic = ((acc & Opcodes.ACC_STATIC) != 0);
     lazyDescr = new DescrCallback();
   }
 
@@ -89,7 +91,7 @@ public class MethodTransformer extends AdviceAdapter {
       push(codePos.incMethodEnterPC());
       captureMethodEnter();
     }
-    if ((methodAccess & Opcodes.ACC_SYNCHRONIZED) != 0) {
+    if ((methodAccess & Opcodes.ACC_SYNCHRONIZED) != 0 && !methodIsStatic) {
       loadThis();
       push(codePos.incMethodEnterPC());
       captureMonitorEnter();
@@ -144,7 +146,7 @@ public class MethodTransformer extends AdviceAdapter {
   }
 
   private void onFinally() {
-    if ((methodAccess & Opcodes.ACC_SYNCHRONIZED) != 0) {
+    if ((methodAccess & Opcodes.ACC_SYNCHRONIZED) != 0 && !methodIsStatic) {
       loadThis();
       push(genCodePosition());
       captureMonitorExit();
@@ -249,7 +251,7 @@ public class MethodTransformer extends AdviceAdapter {
   }
 
   private void captureMethodEnter() {
-    if (methodName.equals("run")) {
+    if (methodName.equals("run") && !methodIsStatic) {
       loadThis();
       push(genCodePosition());
       visitListenerCall("runMethodEnter", "(Ljava/lang/Object;J)V");
@@ -259,7 +261,7 @@ public class MethodTransformer extends AdviceAdapter {
 
   private void captureMethodExit() {
     visitListenerCall("methodExit", "(J)V");
-    if (methodName.equals("run")) {
+    if (methodName.equals("run") && !methodIsStatic) {
       loadThis();
       push(genCodePosition());
       visitListenerCall("runMethodExit", "(Ljava/lang/Object;J)V");
