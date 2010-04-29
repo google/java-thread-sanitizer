@@ -232,7 +232,7 @@ public class MethodTransformer extends AdviceAdapter {
       // We cannot pass an 'ininitialized this' to an interceptor without
       // causing a VerifyError. 'Uninitialized this' can be detected using
       // StackAnalyzer with precomputed stack frame info by ClassWriter. Skip
-      // this process for simlicity.
+      // this process for simplicity.
       if (isStatic) {
         visitStaticFieldAccess(owner + "." + name, isWrite);
       } else {
