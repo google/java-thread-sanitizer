@@ -63,8 +63,8 @@ public class InstrumentCalls {
   }
 
   public void generateCall() {
-    int beforeListeners = beforeTargets == null ? 0 : countListenerCalls(beforeTargets);
-    int afterListeners = afterTargets == null ? 0 : countListenerCalls(afterTargets);
+    int beforeListeners = countListenerCalls(beforeTargets);
+    int afterListeners = countListenerCalls(afterTargets);
     int listeners = beforeListeners + afterListeners;
     if (listeners > 0) {
       saver = cb.createLocalVarsSaver();
@@ -92,6 +92,9 @@ public class InstrumentCalls {
 
   private int countListenerCalls(List<MethodMapping.HandlerInfo> targets) {
     int ret = 0;
+    if (targets == null) {
+        return 0;
+    }
     for (MethodMapping.HandlerInfo target : targets) {
       if (!target.isExact() || target.getWatchedClass().equals(owner)) {
         ret++;
