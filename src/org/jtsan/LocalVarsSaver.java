@@ -30,25 +30,28 @@ public class LocalVarsSaver {
   private final LocalVariablesSorter lvs;
   private Vector<Type> types;
   private Vector<Integer> vars;
+  private boolean hasRetValue;
+  private Type returnType;
+  private int returnVar;
 
   public LocalVarsSaver(MethodVisitor mv, LocalVariablesSorter lvs) {
     this.mv = mv;
     this.lvs = lvs;
   }
 
-  public void initFromMethodDesc(String fullMethodName) {
-    types = parseMethodName(fullMethodName);
+  public void initFromMethodDesc(String meth) {
+    types = parseMethodName(meth);
     vars = newLocalVarsFromTypes(types, lvs);
+    if (meth.charAt(meth.length() - 1) != 'V') {
+      returnType = typeByChar(meth.charAt(meth.indexOf(')') + 1));
+      returnVar = lvs.newLocal(returnType);
+    }
   }
 
   public void initFromTypeDesc(String desc) {
     char c = desc.charAt(0);
     types = new Vector<Type>();
-    if (c == 'L' || c == '[') {
-      types.add(Type.getObjectType("java/lang/Object"));
-    } else {
-      types.add(typeByChar(c));
-    }
+    types.add(typeByChar(c));
     vars = newLocalVarsFromTypes(types, lvs);
   }
 
@@ -66,6 +69,9 @@ public class LocalVarsSaver {
   }
 
   private static Type typeByChar(char ch) {
+    if (ch == 'L' || ch == '[') {
+      return Type.getObjectType("java/lang/Object");
+    }
     switch (ch) {
       case 'I':
         return Type.INT_TYPE;
@@ -94,7 +100,7 @@ public class LocalVarsSaver {
     for (int i = meth.indexOf('(') + 1; inParams(i, meth); i++) {
       char ch = meth.charAt(i);
       Type type;
-      if (ch != 'L') {
+      if (ch != 'L' && ch != '[') {
         type = typeByChar(ch);
       } else {
         StringBuilder sb = new StringBuilder();
@@ -128,5 +134,23 @@ public class LocalVarsSaver {
   public void saveAndLoadStack() {
     saveStack();
     loadStack();
+  }
+
+  public boolean hasReturnValue() {
+    return returnType != null;
+  }
+
+  public void saveReturnValue() {
+    if (!hasReturnValue()) {
+      throw new RuntimeException("Return value type is not porperly initialized to be saved.");
+    }
+    mv.visitVarInsn(returnType.getOpcode(Opcodes.ISTORE), returnVar);
+  }
+
+  public void loadReturnValue() {
+    if (!hasReturnValue()) {
+      throw new RuntimeException("Return value type is not porperly initialized to be loaded.");
+    }
+    mv.visitVarInsn(returnType.getOpcode(Opcodes.ILOAD), returnVar);
   }
 }

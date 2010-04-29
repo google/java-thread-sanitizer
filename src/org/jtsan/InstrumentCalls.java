@@ -37,7 +37,7 @@ import java.util.List;
 public class InstrumentCalls {
   private final int opcode;
   private final String owner;
-  private final String listenerDesc;
+  private final String desc;
   private final GeneratorAdapter gen;
   private final MethodTransformer.GenerationCallback cb;
 
@@ -51,7 +51,7 @@ public class InstrumentCalls {
     this.gen = gen;
     this.opcode = opcode;
     this.owner = owner;
-    this.listenerDesc = desc.replace(")", "J)");
+    this.desc = desc;
   }
 
   public void setBeforeTargets(List<MethodMapping.HandlerInfo> targets) {
@@ -77,12 +77,12 @@ public class InstrumentCalls {
       }
     }
     if (beforeListeners > 0) {
-      genListenerCalls(beforeTargets);
+      genListenerCalls(beforeTargets, false /* saveRet */);
       saver.loadStack();
     }
     cb.visitMethodInsn();
     if (afterListeners > 0) {
-      genListenerCalls(afterTargets);
+      genListenerCalls(afterTargets, true /* saveRet */);
     }
   }
 
@@ -103,18 +103,35 @@ public class InstrumentCalls {
     return ret;
   }
 
-  private void genListenerCalls(List<MethodMapping.HandlerInfo> targets) {
+  private void genListenerCalls(
+      List<MethodMapping.HandlerInfo> targets, boolean saveRet) {
+    boolean returns = false;
+    if (saveRet && saver.hasReturnValue()) {
+      returns = true;
+    }
+    if (returns) {
+      saver.saveReturnValue();
+    }
     for (MethodMapping.HandlerInfo target : targets) {
       Label labelSkip = new Label();
       Label labelAfter = new Label();
       boolean exact = target.isExact();
       boolean callGenerated = false;
       boolean listenStatic = (opcode == Opcodes.INVOKESTATIC);
-      String actualDesc = listenerDesc;
 
+      // Shape the listener method's descriptor.
+      String tailReplacement = "J)V";
+      int idx = desc.indexOf(")");
+      if (returns) {
+        String retType = desc.substring(idx + 1, desc.length());
+        tailReplacement = retType + tailReplacement;
+      }
+      String actualDesc = desc.substring(0, idx) + tailReplacement;
       if (!listenStatic) {
         actualDesc = addClassAsFirstArgument(target.getWatchedClass(), actualDesc);
       }
+
+      // Insert type match checking and the listener call.
       if (!exact && !listenStatic) {
         // Skip the event if 'this' is not a child of the base class.
         gen.dup();
@@ -124,6 +141,9 @@ public class InstrumentCalls {
       }
       if (!exact || target.getWatchedClass().equals(owner)) {
         saver.loadStack();
+        if (returns) {
+          saver.loadReturnValue();
+        }
         gen.push(cb.codePosition());
         cb.listenerCall(target.getHandler(), actualDesc);
         callGenerated = true;
@@ -134,6 +154,9 @@ public class InstrumentCalls {
         gen.pop();
         gen.visitLabel(labelAfter);
       }
+    }
+    if (returns) {
+      saver.loadReturnValue();
     }
   }
 }
