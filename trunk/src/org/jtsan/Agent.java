@@ -186,11 +186,12 @@ public class Agent implements ClassFileTransformer {
                             "juclWriteLockConstructor");
 
     // java.util.concurrent.locks.ReentrantLock
-    // TODO(kcc): support tryLock().
     map.registerAfter("java/util/concurrent/locks/ReentrantLock",
                       "lock()V", "jucRL_lock");
     map.registerBefore("java/util/concurrent/locks/ReentrantLock",
                       "unlock()V", "jucRL_unlock");
+    map.registerAfter("java/util/concurrent/locks/ReentrantLock",
+                      "tryLock()Z", "jucRL_tryLock");
 
     // RaceDetectorApi. Put exact matching to eliminate the cost of extra checks.
     // TODO(egor): methods must be named starting with lowercase letter.

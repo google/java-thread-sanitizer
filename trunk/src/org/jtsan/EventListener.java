@@ -277,4 +277,8 @@ public class EventListener {
       ReentrantReadWriteLock outerLock, long pc) {
     writeLockMap.put(writeLock, outerLock);
   }
+
+  public static void jucRL_tryLock(ReentrantLock lck, boolean returned, long pc) {
+    // TODO(egor): report a happens-before relation.
+  }
 }
