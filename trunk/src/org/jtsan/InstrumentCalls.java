@@ -78,6 +78,8 @@ public class InstrumentCalls {
     }
     if (beforeListeners > 0) {
       genListenerCalls(beforeTargets, false /* saveRet */);
+    }
+    if (listeners > 0) {
       saver.loadStack();
     }
     cb.visitMethodInsn();
