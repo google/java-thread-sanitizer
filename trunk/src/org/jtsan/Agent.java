@@ -167,7 +167,6 @@ public class Agent implements ClassFileTransformer {
                       "acquire()V", "jucSemaphore_acquire");
 
     // java.util.concurrent.locks.ReentrantReadWriteLock
-    // TODO(kcc): support tryLock().
     map.registerAfter("java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock",
                       "lock()V", "jucRRWL_ReadLock_lock");
     map.registerBefore("java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock",
@@ -176,6 +175,12 @@ public class Agent implements ClassFileTransformer {
                       "lock()V", "jucRRWL_WriteLock_lock");
     map.registerBefore("java/util/concurrent/locks/ReentrantReadWriteLock$WriteLock",
                        "unlock()V", "jucRRWL_WriteLock_unlock");
+    map.registerAfter("java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock",
+                      "tryLock()Z", "jucRRWL_ReadLock_tryLock");
+    // TODO(egor): tryLock(JLjava/util/concurrent/TimeUnit;)Z
+    map.registerAfter("java/util/concurrent/locks/ReentrantReadWriteLock$WriteLock",
+                      "tryLock()Z", "jucRRWL_WriteLock_tryLock");
+    // TODO(egor): tryLock(JLjava/util/concurrent/TimeUnit;)Z
 
     map.registerBeforeExact("java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock",
                             "<init>(Ljava/util/concurrent/locks/ReentrantReadWriteLock;)V",
