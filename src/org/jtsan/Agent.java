@@ -192,6 +192,8 @@ public class Agent implements ClassFileTransformer {
                       "unlock()V", "jucRL_unlock");
     map.registerAfter("java/util/concurrent/locks/ReentrantLock",
                       "tryLock()Z", "jucRL_tryLock");
+    map.registerAfter("java/util/concurrent/locks/ReentrantLock",
+                      "tryLock(JLjava/util/concurrent/TimeUnit;)Z", "jucRL_tryLock2");
 
     // RaceDetectorApi. Put exact matching to eliminate the cost of extra checks.
     // TODO(egor): methods must be named starting with lowercase letter.

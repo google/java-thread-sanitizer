@@ -16,11 +16,12 @@
 package org.jtsan;
 
 import java.io.PrintWriter;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 /**
@@ -244,6 +245,19 @@ public class EventListener {
     writeLock(lock, pc);
   }
 
+  public static void jucRL_tryLock(ReentrantLock lck, boolean returned, long pc) {
+    if (returned) {
+      writeLock(lck, pc);
+    }
+  }
+
+  public static void jucRL_tryLock2(
+      ReentrantLock lck, long timeout, TimeUnit unit, boolean returned, long pc) {
+    if (returned) {
+      writeLock(lck, pc);
+    }
+  }
+
   public static void jucRL_unlock(ReentrantLock lock, long pc){
     unlock(lock, pc);
   }
@@ -278,7 +292,4 @@ public class EventListener {
     writeLockMap.put(writeLock, outerLock);
   }
 
-  public static void jucRL_tryLock(ReentrantLock lck, boolean returned, long pc) {
-    // TODO(egor): report a happens-before relation.
-  }
 }
