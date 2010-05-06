@@ -229,12 +229,26 @@ public class EventListener {
     readLock(readLockMap.get(lock), pc);
   }
 
+  public static void jucRRWL_ReadLock_tryLock(
+      ReentrantReadWriteLock.ReadLock lock, boolean succeeded, long pc){
+    if (succeeded) {
+      readLock(readLockMap.get(lock), pc);
+    }
+  }
+
   public static void jucRRWL_ReadLock_unlock(ReentrantReadWriteLock.ReadLock lock, long pc){
     unlock(readLockMap.get(lock), pc);
   }
 
   public static void jucRRWL_WriteLock_lock(ReentrantReadWriteLock.WriteLock lock, long pc){
     writeLock(writeLockMap.get(lock), pc);
+  }
+
+  public static void jucRRWL_WriteLock_tryLock(
+      ReentrantReadWriteLock.WriteLock lock, boolean succeeded, long pc){
+    if (succeeded) {
+      writeLock(writeLockMap.get(lock), pc);
+    }
   }
 
   public static void jucRRWL_WriteLock_unlock(ReentrantReadWriteLock.WriteLock lock, long pc){
