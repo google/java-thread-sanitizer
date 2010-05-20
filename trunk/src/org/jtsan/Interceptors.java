@@ -56,10 +56,14 @@ public class Interceptors {
                        "unlock()V", "jucRRWL_WriteLock_unlock");
     map.registerAfter("java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock",
                       "tryLock()Z", "jucRRWL_ReadLock_tryLock");
-    // TODO(egor): tryLock(JLjava/util/concurrent/TimeUnit;)Z
+    map.registerAfter("java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock",
+                      "tryLock(JLjava/util/concurrent/TimeUnit;)Z",
+                      "jucRRWL_ReadLock_tryLock2");
     map.registerAfter("java/util/concurrent/locks/ReentrantReadWriteLock$WriteLock",
                       "tryLock()Z", "jucRRWL_WriteLock_tryLock");
-    // TODO(egor): tryLock(JLjava/util/concurrent/TimeUnit;)Z
+    map.registerAfter("java/util/concurrent/locks/ReentrantReadWriteLock$WriteLock",
+                      "tryLock(JLjava/util/concurrent/TimeUnit;)Z",
+                      "jucRRWL_WriteLock_tryLock2");
 
     map.registerBeforeExact("java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock",
                             "<init>(Ljava/util/concurrent/locks/ReentrantReadWriteLock;)V",
