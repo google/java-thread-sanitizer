@@ -32,14 +32,18 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class EventListener {
   private static PrintWriter out;
 
+  // Typedef replacement.
   static class ReadLockMap extends
       ConcurrentHashMap<ReentrantReadWriteLock.ReadLock, ReentrantReadWriteLock> {
     public ReadLockMap() { super(10); }
+    private static final long serialVersionUID = 0L; // Avoid javac warning.
   }
 
+  // Typedef replacement.
   static class WriteLockMap extends
       ConcurrentHashMap<ReentrantReadWriteLock.WriteLock, ReentrantReadWriteLock> {
     public WriteLockMap() { super(10); }
+    private static final long serialVersionUID = 0L; // Avoid javac warning.
   }
 
   private static ReadLockMap readLockMap = new ReadLockMap();
