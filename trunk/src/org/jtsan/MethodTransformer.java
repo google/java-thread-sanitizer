@@ -275,7 +275,9 @@ public class MethodTransformer extends AdviceAdapter {
     mv.visitVarInsn(ISTORE, indexVar);
     dup();
     mv.visitVarInsn(ILOAD, indexVar);
-    visitListenerCall("arrayLoad", "(Ljava/lang/Object;I)V");
+    push(0);
+    push(genCodePosition());
+    visitListenerCall("arrayAccess", "(Ljava/lang/Object;IZJ)V");
     mv.visitVarInsn(ILOAD, indexVar);
   }
 
@@ -289,7 +291,9 @@ public class MethodTransformer extends AdviceAdapter {
     mv.visitVarInsn(ISTORE, indexVar);
     dup();
     mv.visitVarInsn(ILOAD, indexVar);
-    visitListenerCall("arrayStore", "(Ljava/lang/Object;I)V");
+    push(1);
+    push(genCodePosition());
+    visitListenerCall("arrayAccess", "(Ljava/lang/Object;IZJ)V");
     mv.visitVarInsn(ILOAD, indexVar);
     mv.visitVarInsn(slotType.getOpcode(ILOAD), valueVar);
   }
