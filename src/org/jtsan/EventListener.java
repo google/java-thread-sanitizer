@@ -264,7 +264,6 @@ public class EventListener {
                                                 long unused1,
                                                 TimeUnit unused2,
                                                 boolean succeeded, long pc){
-    out.println("HAHAHA");
     if (succeeded) {
       writeLock(writeLockMap.get(lock), pc);
     }
