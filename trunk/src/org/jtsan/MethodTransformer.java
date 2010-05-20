@@ -236,7 +236,9 @@ public class MethodTransformer extends AdviceAdapter {
       if (isStatic) {
         visitStaticFieldAccess(owner + "." + name, isWrite);
       } else {
-        visitObjectFieldAccess(name, desc, isWrite, isVolatileField(owner + "." + name));
+        if (!methods.isBenignRaceField(owner, name)) {
+          visitObjectFieldAccess(name, desc, isWrite, isVolatileField(owner + "." + name));
+        }
       }
     }
     super.visitFieldInsn(opcode, owner, name, desc);

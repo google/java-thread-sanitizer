@@ -16,6 +16,7 @@
 package org.jtsan;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -30,6 +31,8 @@ public class MethodMapping {
   public static final int E_AFTER_METHOD = 2;
 
   private final ConcurrentHashMap<EventInfo, LinkedList<HandlerInfo>> map;
+
+  private final HashSet<String> benignRaceFields = new HashSet<String>();
 
   /**
    * Keeps information about target handler method and the source class that
@@ -128,6 +131,13 @@ public class MethodMapping {
 
   public List<HandlerInfo> getTargetsFor(String name, int eventType) {
     return map.get(new EventInfo(name, eventType));
+  }
 
+  public synchronized void benignRaceField(String clazz, String field) {
+    benignRaceFields.add(clazz + "." + field);
+  }
+
+  public synchronized boolean isBenignRaceField(String clazz, String field) {
+    return benignRaceFields.contains(clazz + "." + field);
   }
 }
