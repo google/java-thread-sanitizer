@@ -236,6 +236,15 @@ public class EventListener {
     }
   }
 
+  public static void jucRRWL_ReadLock_tryLock2(ReentrantReadWriteLock.ReadLock lock,
+                                               long unued1,
+                                               TimeUnit unused2,
+                                               boolean succeeded, long pc){
+    if (succeeded) {
+      readLock(readLockMap.get(lock), pc);
+    }
+  }
+
   public static void jucRRWL_ReadLock_unlock(ReentrantReadWriteLock.ReadLock lock, long pc){
     unlock(readLockMap.get(lock), pc);
   }
@@ -246,6 +255,16 @@ public class EventListener {
 
   public static void jucRRWL_WriteLock_tryLock(
       ReentrantReadWriteLock.WriteLock lock, boolean succeeded, long pc){
+    if (succeeded) {
+      writeLock(writeLockMap.get(lock), pc);
+    }
+  }
+
+  public static void jucRRWL_WriteLock_tryLock2(ReentrantReadWriteLock.WriteLock lock,
+                                                long unused1,
+                                                TimeUnit unused2,
+                                                boolean succeeded, long pc){
+    out.println("HAHAHA");
     if (succeeded) {
       writeLock(writeLockMap.get(lock), pc);
     }
