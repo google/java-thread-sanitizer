@@ -157,12 +157,14 @@ public class EventListener {
     unlock(obj, pc);
   }
 
-  public static void arrayLoad(Object array, int index) {
-    //out.println("arrayLoad idx:  " + index + ", hash: " + System.identityHashCode(array));
-  }
-
-  public static void arrayStore(Object array, int index) {
-    //out.println("arrayStore idx: " + index + ", hash: " + System.identityHashCode(array));
+  public static void arrayAccess(Object array, int index, boolean isWrite, long pc) {
+    // TODO(egor): improve uniqueness for 64bit offline detector.
+    int id = System.identityHashCode(array) + index;
+    reportFieldAccess(isWrite,
+                      tid(),
+                      pc,
+                      id,
+                      false); // isVolatile
   }
 
   public static void jlObjectWait(Object obj, long pc) {
