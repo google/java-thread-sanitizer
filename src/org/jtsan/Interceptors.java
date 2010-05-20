@@ -86,5 +86,9 @@ public class Interceptors {
     map.registerBeforeExact("RaceDetectorApi", "ExpectRaceEnd()V", "rdaApiExpectRaceEnd");
     map.registerBeforeExact("RaceDetectorApi", "PrintStackTrace()V", "rdaApiPrintStackTrace");
     map.registerBeforeExact("RaceDetectorApi", "Print(Ljava/lang/String;)V", "rdaApiPrint");
+
+    // Benign race spots in system classes.
+    map.benignRaceField("java/util/concurrent/locks/ReentrantReadWriteLock$Sync",
+                        "cachedHoldCounter");
   }
 }
