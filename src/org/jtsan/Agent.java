@@ -39,13 +39,38 @@ public class Agent implements ClassFileTransformer {
 
   private static final String DEBUG_CLASS_PREFIX = "cls=";
 
+  // Option that enables retranslation of system classes.
+  private static final String ENABLE_SYS_PREFIX = "sys=";
+
   // Ignore list to eliminate endless recursion.
-  private static String[] ignore = new String[] { "java", "sun/", "org/jtsan" };
+  private static String[] ignore = new String[] {
+    "RaceDetectorApi",
+    "org/jtsan",
+    "sun/",
+
+    // Classes required by EventListener itself. Triggering events in these will
+    // cause endless recursion.
+    "java/io/PrintWriter",
+    "java/lang/AbstractStringBuilder",
+    "java/lang/Boolean",
+    "java/lang/Class",
+    "java/lang/Long",
+    "java/lang/String",
+    "java/lang/StringBuilder",
+    "java/lang/System",
+
+    // Exclusions to workaround HotSpot internal failures.
+    "java/io/",
+    "java/lang/Math",
+    "java/lang/Thread",
+    "java/lang/ref/",
+    "java/lang/reflect/",
+    "java/nio/",
+    "java/util/Arrays",
+  };
 
   // A list of exceptions for the ignore list.
-  private static String[] noignore = new String[] {
-      "java/util/concurrent/locks/ReentrantReadWriteLock"
-  };
+  private static String[] noignore = new String[] { };
 
   // System methods to intercept.
   private static MethodMapping syncMethods = null;
@@ -58,16 +83,11 @@ public class Agent implements ClassFileTransformer {
 
   public static void premain(String arg, Instrumentation instrumentation) {
     Agent agent = new Agent();
-    instrumentation.addTransformer(agent, true);
     syncMethods = new MethodMapping();
     Interceptors.init(syncMethods);
 
-    // TODO:
-    //   load all java/lang and java/util classes that the instrumenter will be using
-    //     (no transforming)
-    //   retransform all loaded java/lang and java/util classes
-
     String fname = "jtsan.log";
+    boolean retransformSystem = false;
     if (arg != null) {
       String[] args = arg.split(":");
       for (int i = 0; i < args.length; i++) {
@@ -79,8 +99,13 @@ public class Agent implements ClassFileTransformer {
         if (idx != -1) {
           agent.debugClassPrefix = args[i].substring(idx + DEBUG_CLASS_PREFIX.length());
         }
+        idx = args[i].lastIndexOf(ENABLE_SYS_PREFIX);
+        if (idx != -1) {
+          retransformSystem = "1".equals(args[i].substring(idx + ENABLE_SYS_PREFIX.length()));
+        }
       }
     }
+    System.out.println("retransformSystem = " + retransformSystem);
     try {
       if (fname.equals("-")) {
         EventListener.setPrinter(new PrintWriter(System.out, true /* auto flush */));
@@ -94,6 +119,20 @@ public class Agent implements ClassFileTransformer {
       System.exit(5);
     }
     EventListener.threadsInit();
+    instrumentation.addTransformer(agent, true);
+    if (retransformSystem) {
+      for (Class c : instrumentation.getAllLoadedClasses()) {
+        if (!c.isInterface() && instrumentation.isModifiableClass(c)) {
+          String cs = c.toString();
+          try {
+            instrumentation.retransformClasses(c);
+          } catch (UnmodifiableClassException e) {
+            System.err.println("Cannot retransform class. Exception: " + e);
+            System.exit(1);
+          }
+        }
+      }
+    }
   }
 
   private boolean inIgnoreList(String className) {
