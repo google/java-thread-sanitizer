@@ -86,6 +86,7 @@ public class Agent implements ClassFileTransformer {
     syncMethods = new MethodMapping();
     Interceptors.init(syncMethods);
 
+    // Parse Agent arguments.
     String fname = "jtsan.log";
     boolean retransformSystem = false;
     if (arg != null) {
@@ -105,7 +106,8 @@ public class Agent implements ClassFileTransformer {
         }
       }
     }
-    System.out.println("retransformSystem = " + retransformSystem);
+
+    // Initialize output stream for interceptors.
     try {
       if (fname.equals("-")) {
         EventListener.setPrinter(new PrintWriter(System.out, true /* auto flush */));
@@ -118,8 +120,12 @@ public class Agent implements ClassFileTransformer {
       System.err.println("Exception while opening file: " + fname + ", reason: " + e);
       System.exit(5);
     }
+
+    // Enable the class transformation.
     EventListener.threadsInit();
     instrumentation.addTransformer(agent, true);
+
+    // Retransform most of the currently loaded system classes.
     if (retransformSystem) {
       for (Class c : instrumentation.getAllLoadedClasses()) {
         if (!c.isInterface() && instrumentation.isModifiableClass(c)) {
