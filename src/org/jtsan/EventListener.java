@@ -119,8 +119,7 @@ public class EventListener {
       if (isWrite) {
         out.println("SIGNAL " + strTid + " " + pc + " " + id + " 0");
       } else {
-        out.println("WAIT_BEFORE " + strTid + " " + pc + " " + id + " 0");
-        out.println("WAIT_AFTER " + strTid + " " + pc + " " + "0 0");
+        out.println("WAIT " + strTid + " " + pc + " " + id + " 0");
       }
     } else {
       String acc = isWrite ? "WRITE " : "READ ";
@@ -172,12 +171,12 @@ public class EventListener {
   }
 
   public static void jlObjectWait(Object obj, long pc) {
-    out.println("WAIT_BEFORE "  + tid() + " " + pc + " " +
-        System.identityHashCode(obj) + " 0");
+    // TODO(kcc): this is probably not needed any more.
   }
 
   public static void jlObjectWaitAfter(Object obj, long pc) {
-    out.println("WAIT_AFTER "  + tid() + " " + pc + " 0 0");
+    out.println("WAIT "  + tid() + " " + pc + " " +
+        System.identityHashCode(obj) + " 0");
   }
 
   public static void jlObjectNotify(Object obj, long pc) {
