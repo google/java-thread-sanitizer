@@ -20,9 +20,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 
 /**
  * Performs actions on intercepted events.
@@ -46,9 +47,18 @@ public class EventListener {
     private static final long serialVersionUID = 0L; // Avoid javac warning.
   }
 
+  // Typedef replacement.
+  static class ConditionMap extends
+      ConcurrentHashMap<Condition, Lock> {
+    public ConditionMap() { super(10); }
+    private static final long serialVersionUID = 0L; // Avoid javac warning
+  }
+
   private static ReadLockMap readLockMap = new ReadLockMap();
 
   private static WriteLockMap writeLockMap = new WriteLockMap();
+
+  private static ConditionMap conditionMap = new ConditionMap();
 
   public static void setPrinter(PrintWriter w) {
     out = w;
@@ -108,7 +118,7 @@ public class EventListener {
 
   public static void runMethodExit(Object obj, long pc) {
     if (obj instanceof Thread) {
-      // out.println("THR_END " + tid() + " " + pc + " 0 0");
+      //out.println("THR_END " + tid() + " " + pc + " 0 0");
     }
   }
 
@@ -171,12 +181,12 @@ public class EventListener {
   }
 
   public static void jlObjectWait(Object obj, long pc) {
-    // TODO(kcc): this is probably not needed any more.
+    unlock(obj, pc);
   }
 
   public static void jlObjectWaitAfter(Object obj, long pc) {
-    out.println("WAIT "  + tid() + " " + pc + " " +
-        System.identityHashCode(obj) + " 0");
+    waitOnObject(obj, pc);
+    writeLock(obj, pc);
   }
 
   public static void jlObjectNotify(Object obj, long pc) {
@@ -327,5 +337,26 @@ public class EventListener {
   public static void juclWriteLockConstructor(ReentrantReadWriteLock.WriteLock writeLock,
       ReentrantReadWriteLock outerLock, long pc) {
     writeLockMap.put(writeLock, outerLock);
+  }
+  public static void juclCondition_awaitBefore(Condition condition, long pc) {
+    unlock(conditionMap.get(condition), pc);
+  }
+
+  public static void juclCondition_awaitAfter(Condition condition, long pc) {
+    Lock lock = conditionMap.get(condition);
+    writeLock(lock, pc);
+    waitOnObject(lock, pc);
+  }
+
+  public static void juclLock_newCondition(Lock lock, Condition condition, long pc) {
+    conditionMap.put(condition, lock);
+  }
+
+  public static void juclCondition_signalAll(Condition condition, long pc) {
+    signalOnObject(condition, pc);
+  }
+
+  public static void juclCondition_signal(Condition condition, long pc) {
+    signalOnObject(conditionMap.get(condition), pc);
   }
 }

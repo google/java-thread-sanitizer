@@ -67,6 +67,10 @@ public class Agent implements ClassFileTransformer {
     "java/lang/reflect/",
     "java/nio/",
     "java/util/Arrays",
+
+    // Exclude some internals of java.util.concurrent to avoid false report.
+    // "java/util/concurrent/locks/AbstractQueuedSynchronizer",
+    // "java/util/concurrent/locks/LockSupport",
   };
 
   // A list of exceptions for the ignore list.
