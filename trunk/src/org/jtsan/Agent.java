@@ -67,6 +67,7 @@ public class Agent implements ClassFileTransformer {
     "java/lang/reflect/",
     "java/nio/",
     "java/util/Arrays",
+
   };
 
   // A list of exceptions for the ignore list.
