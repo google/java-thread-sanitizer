@@ -240,5 +240,4 @@ public class Agent implements ClassFileTransformer {
                 TraceClassVisitor.getDefaultAttributes(),
                 0);
   }
-
 }
