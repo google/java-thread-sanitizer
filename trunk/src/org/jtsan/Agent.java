@@ -15,15 +15,26 @@
 
 package org.jtsan;
 
-import org.objectweb.asm.*;
-import org.objectweb.asm.commons.*;
-import org.objectweb.asm.util.*;
+//import org.jtsan.writers.BinAndStrEventWriter;
+//import org.jtsan.writers.BinaryEventWriter;
+import org.jtsan.writers.EventWriter;
+import org.jtsan.writers.NoneEventWriter;
+import org.jtsan.writers.StringEventWriter;
+import org.objectweb.asm.ClassAdapter;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.commons.LocalVariablesSorter;
+import org.objectweb.asm.util.TraceClassVisitor;
 
-import java.lang.instrument.*;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.instrument.ClassFileTransformer;
+import java.lang.instrument.Instrumentation;
+import java.lang.instrument.UnmodifiableClassException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -41,6 +52,16 @@ public class Agent implements ClassFileTransformer {
 
   // Option that enables retranslation of system classes.
   private static final String ENABLE_SYS_PREFIX = "sys=";
+
+  private static final String WRITER_PREFIX = "writer=";
+  // Possible values are:
+  private static final String WRITER_TYPE_STRING = "str"; //(default)
+  private static final String WRITER_TYPE_NULL = "none";
+  private static final String WRITER_TYPE_BINARY = "bin";
+  private static final String WRITER_TYPE_BINSTRDEBUG = "binstr";
+
+  // Default events file name.
+  private static final String DEFAULT_EVENTS_FILE = "jtsan.events";
 
   // Ignore list to eliminate endless recursion.
   private static String[] ignore = new String[] {
@@ -72,6 +93,7 @@ public class Agent implements ClassFileTransformer {
     // Exclude some internals of java.util.concurrent to avoid false report.
     // "java/util/concurrent/locks/AbstractQueuedSynchronizer",
     // "java/util/concurrent/locks/LockSupport",
+
   };
 
   // A list of exceptions for the ignore list.
@@ -86,14 +108,18 @@ public class Agent implements ClassFileTransformer {
 
   private String debugClassPrefix;
 
+  private static EventWriter eventWriter;
+
   public static void premain(String arg, Instrumentation instrumentation) {
     Agent agent = new Agent();
     syncMethods = new MethodMapping();
     Interceptors.init(syncMethods);
 
     // Parse Agent arguments.
-    String fname = "jtsan.log";
+    String fname = DEFAULT_EVENTS_FILE;
     boolean retransformSystem = false;
+    // The events are written in string form by default.
+    eventWriter = new StringEventWriter();
     if (arg != null) {
       String[] args = arg.split(":");
       for (int i = 0; i < args.length; i++) {
@@ -109,16 +135,29 @@ public class Agent implements ClassFileTransformer {
         if (idx != -1) {
           retransformSystem = "1".equals(args[i].substring(idx + ENABLE_SYS_PREFIX.length()));
         }
+        idx = args[i].lastIndexOf(WRITER_PREFIX);
+        if (idx != -1) {
+          String writerName = args[i].substring(idx + WRITER_PREFIX.length());
+          if (writerName.equals(WRITER_TYPE_STRING)) {
+            eventWriter = new StringEventWriter();
+          } else if (writerName.equals(WRITER_TYPE_NULL)) {
+            eventWriter = new NoneEventWriter();
+          } else if (writerName.equals(WRITER_TYPE_BINARY)) {
+            //eventWriter = new BinaryEventWriter();
+          } else if (writerName.equals(WRITER_TYPE_BINSTRDEBUG)) {
+            //eventWriter = new BinAndStrEventWriter();
+          }
+        }
       }
     }
 
     // Initialize output stream for interceptors.
+    EventListener.setEventWriter(eventWriter);
     try {
       if (fname.equals("-")) {
-        EventListener.setPrinter(new PrintWriter(System.out, true /* auto flush */));
+        eventWriter.setOutputStream(System.out);
       } else {
-        EventListener.setPrinter(new PrintWriter(
-            new FileWriter(fname, false /* append */), true /* auto flush */));
+        eventWriter.setOutputStream(new FileOutputStream(fname, false /* append */));
       }
       System.err.println("Java Agent: appending threading events to file: " + fname);
     } catch (IOException e) {
@@ -160,10 +199,8 @@ public class Agent implements ClassFileTransformer {
     return false;
   }
 
-  @Override
   public byte[] transform(ClassLoader loader, String className,
-      Class clazz, java.security.ProtectionDomain domain,
-      byte[] bytes) {
+      Class clazz, java.security.ProtectionDomain domain, byte[] bytes) {
     try {
       if (inIgnoreList(className)) {
         return bytes;

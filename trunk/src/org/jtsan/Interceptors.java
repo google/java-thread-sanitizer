@@ -24,8 +24,7 @@ package org.jtsan;
 public class Interceptors {
 
   static void init(MethodMapping map) {
-    map.registerBefore("java/lang/System",
-                       "arraycopy(Ljava/lang/Object;ILjava/lang/Object;II)V",
+    map.registerBefore("java/lang/System", "arraycopy(Ljava/lang/Object;ILjava/lang/Object;II)V",
                        "jlSystemArrayCopy");
     map.registerBefore("java/lang/Object", "wait()V", "jlObjectWait");
     map.registerBefore("java/lang/Object", "notify()V", "jlObjectNotify");
@@ -74,12 +73,9 @@ public class Interceptors {
                             "juclWriteLockConstructor");
 
     // java.util.concurrent.locks.ReentrantLock
-    map.registerAfter("java/util/concurrent/locks/ReentrantLock",
-                      "lock()V", "jucRL_lock");
-    map.registerBefore("java/util/concurrent/locks/ReentrantLock",
-                       "unlock()V", "jucRL_unlock");
-    map.registerAfter("java/util/concurrent/locks/ReentrantLock",
-                      "tryLock()Z", "jucRL_tryLock");
+    map.registerAfter("java/util/concurrent/locks/ReentrantLock", "lock()V", "jucRL_lock");
+    map.registerBefore("java/util/concurrent/locks/ReentrantLock", "unlock()V", "jucRL_unlock");
+    map.registerAfter("java/util/concurrent/locks/ReentrantLock", "tryLock()Z", "jucRL_tryLock");
     map.registerAfter("java/util/concurrent/locks/ReentrantLock",
                       "tryLock(JLjava/util/concurrent/TimeUnit;)Z", "jucRL_tryLock2");
 
@@ -89,21 +85,19 @@ public class Interceptors {
                       "juclLock_newCondition");
 
     // java.util.concurrent.Condition
-    map.registerBefore("java/util/concurrent/locks/Condition",
-                       "await()V", "juclCondition_awaitBefore");
-    map.registerAfter("java/util/concurrent/locks/Condition",
-                      "await()V", "juclCondition_awaitAfter");
-    map.registerBefore("java/util/concurrent/locks/Condition",
-                       "signalAll()V", "juclCondition_signalAll");
-    map.registerBefore("java/util/concurrent/locks/Condition",
-                       "signal()V", "juclCondition_signal");
+    map.registerBefore("java/util/concurrent/locks/Condition", "await()V",
+                       "juclCondition_awaitBefore");
+    map.registerAfter("java/util/concurrent/locks/Condition", "await()V",
+                      "juclCondition_awaitAfter");
+    map.registerBefore("java/util/concurrent/locks/Condition", "signalAll()V",
+                       "juclCondition_signalAll");
+    map.registerBefore("java/util/concurrent/locks/Condition", "signal()V",
+                       "juclCondition_signal");
     // TODO(vors): add other await methods:
     // await(long, TimeUnit)
     // awaitNanos(long)
     // awaitUninterruptibly()
     // awaitUntil(Date)
-    // TODO(vors): Check happens-before events correctness with unit-tests.
-
 
     // RaceDetectorApi. Put exact matching to eliminate the cost of extra checks.
     // TODO(egor): methods must be named starting with lowercase letter.

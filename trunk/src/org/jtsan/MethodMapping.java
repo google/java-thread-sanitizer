@@ -15,10 +15,12 @@
 
 package org.jtsan;
 
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Keeps a mapping of system methods to their interception handlers.
@@ -30,9 +32,9 @@ public class MethodMapping {
   public static final int E_BEFORE_METHOD = 1;
   public static final int E_AFTER_METHOD = 2;
 
-  private final ConcurrentHashMap<EventInfo, LinkedList<HandlerInfo>> map;
-
-  private final HashSet<String> benignRaceFields = new HashSet<String>();
+  private final ConcurrentMap<EventInfo, LinkedList<HandlerInfo>> map =
+      new ConcurrentHashMap<EventInfo, LinkedList<HandlerInfo>>(10);
+  private final Set<String> benignRaceFields = new HashSet<String>();
 
   /**
    * Keeps information about target handler method and the source class that
@@ -95,10 +97,6 @@ public class MethodMapping {
     public int hashCode() {
       return hash;
     }
-  }
-
-  public MethodMapping() {
-    map = new ConcurrentHashMap<EventInfo, LinkedList<HandlerInfo>>(10);
   }
 
   public synchronized void registerEvent(
