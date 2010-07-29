@@ -15,7 +15,8 @@
 
 package org.jtsan;
 
-import java.io.PrintWriter;
+import org.jtsan.writers.EventWriter;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
@@ -31,7 +32,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author Egor Pasko
  */
 public class EventListener {
-  private static PrintWriter out;
+  private static EventWriter writer;
 
   // Typedef replacement.
   static class ReadLockMap extends
@@ -51,7 +52,7 @@ public class EventListener {
   static class ConditionMap extends
       ConcurrentHashMap<Condition, Lock> {
     public ConditionMap() { super(10); }
-    private static final long serialVersionUID = 0L; // Avoid javac warning
+    private static final long serialVersionUID = 0L; // Avoid javac warning.
   }
 
   private static ReadLockMap readLockMap = new ReadLockMap();
@@ -60,84 +61,53 @@ public class EventListener {
 
   private static ConditionMap conditionMap = new ConditionMap();
 
-  public static void setPrinter(PrintWriter w) {
-    out = w;
+  public static void setEventWriter(EventWriter w) {
+    writer = w;
   }
 
   public static long tid() {
     return Thread.currentThread().getId() - 1;
   }
 
-  static void signalOnObject(Object obj, long pc){
-    out.println("SIGNAL " + tid() + " " + pc + " " +
-        System.identityHashCode(obj) + " 0");
-  }
-  static void waitOnObject(Object obj, long pc){
-    out.println("WAIT " + tid() + " " + pc + " " +
-        System.identityHashCode(obj) + " 0");
-  }
-
-  static void writeLock(Object obj, long pc) {
-    out.println("WRITER_LOCK " + tid() + " " + pc + " " +
-        System.identityHashCode(obj) + " 0");
-  }
-  static void readLock(Object obj, long pc) {
-    out.println("READER_LOCK " + tid() + " " + pc + " " +
-        System.identityHashCode(obj) + " 0");
-  }
-  static void unlock(Object obj, long pc) {
-    out.println("UNLOCK " + tid() + " " + pc + " " +
-        System.identityHashCode(obj) + " 0");
-  }
-
   public static void codePosition(long pc, String descr) {
-    out.println("#PC " + pc + " java " + descr);
+    writer.writeCodePosition(pc, descr);
   }
 
+  public static void threadsInit() {
+    writer.writeEvent(EventType.THR_START, 0, 0, 0, 0);
+    writer.writeEvent(EventType.THR_FIRST_INSN, 0, 0, 0, 0);
+  }
+  
+  // MethodTransformer hooks.
   public static void beforeCall(long pc) {
-    out.println("SBLOCK_ENTER " + tid() + " " + pc + " 0 0");
+    writer.writeEvent(EventType.SBLOCK_ENTER, tid(), pc, 0, 0);
   }
 
   public static void methodEnter(long pc) {
-    out.println("RTN_CALL " + tid() + " 0 0 0");
-    out.println("SBLOCK_ENTER " + tid() + " " + pc + " 0 0");
+    writer.writeEvent(EventType.RTN_CALL, tid(), 0, 0, 0);
+    writer.writeEvent(EventType.SBLOCK_ENTER, tid(), pc, 0, 0);
   }
 
   public static void methodExit(long pc) {
-    out.println("RTN_EXIT " + tid() + " " + pc + " 0 0");
+    writer.writeEvent(EventType.RTN_EXIT, tid(), pc, 0, 0);
   }
 
   public static void runMethodEnter(Object obj, long pc) {
-    if (obj instanceof Thread) {
-      Thread thr = (Thread) obj;
-      long child_tid = thr.getId() - 1;
-      //out.println("THR_START " + child_tid + " " + pc + " 0 0");
-      //out.println("THR_FIRST_INSN " + child_tid + " " + pc + " 0 0");
-    }
+    // Calls to this methods are emitted by the instrumentation process.
   }
 
   public static void runMethodExit(Object obj, long pc) {
-    if (obj instanceof Thread) {
-      //out.println("THR_END " + tid() + " " + pc + " 0 0");
-    }
+    // Calls to this methods are emitted by the instrumentation process.
   }
 
   public static void reportFieldAccess(
       boolean isWrite, long tid, long pc, long id, boolean isVolatile) {
-    String strTid = Long.toString(tid);
     if (isVolatile) {
-      if (isWrite) {
-        out.println("SIGNAL " + strTid + " " + pc + " " + id + " 0");
-      } else {
-        out.println("WAIT " + strTid + " " + pc + " " + id + " 0");
-      }
+      writer.writeEvent(isWrite ? EventType.SIGNAL : EventType.WAIT, tid, pc, id, 0);
     } else {
-      String acc = isWrite ? "WRITE " : "READ ";
-      out.println(acc + strTid + " " + pc + " " + id + " 1");
+      writer.writeEvent(isWrite ? EventType.WRITE : EventType.READ, tid, pc, id, 1);
     }
   }
-
-  public static void ofa(Object obj) {}
 
   public static void objectFieldAccess(Object obj, boolean isWrite,
       String fieldName, long pc, boolean isVolatile) {
@@ -163,11 +133,11 @@ public class EventListener {
   }
 
   public static void monitorEnter(Object obj, long pc) {
-    writeLock(obj, pc);
+    writer.writeEvent(EventType.WRITER_LOCK, tid(), pc, System.identityHashCode(obj), 0);
   }
 
   public static void monitorExit(Object obj, long pc) {
-    unlock(obj, pc);
+    writer.writeEvent(EventType.UNLOCK, tid(), pc, System.identityHashCode(obj), 0);
   }
 
   public static void arrayAccess(Object array, int index, boolean isWrite, long pc) {
@@ -180,17 +150,40 @@ public class EventListener {
                       false); // isVolatile
   }
 
+  // Race detector API hooks.
+  public static void rdaApiNoOp(Object obj, long pc) {
+    // writer.writeEvent("T" + tid() + " API_NO_OP " + pc);
+  }
+
+  public static void rdaApiExpectRaceBegin(long pc) {
+    writer.writeEvent(EventType.EXPECT_RACE_BEGIN, tid(), pc, 0, 0);
+  }
+
+  public static void rdaApiExpectRaceEnd(long pc) {
+    writer.writeEvent(EventType.EXPECT_RACE_END, tid(), pc, 0, 0);
+  }
+
+  public static void rdaApiPrintStackTrace(long pc) {
+    writer.writeEvent(EventType.STACK_TRACE, tid(), pc, 0, 0);
+  }
+
+  public static void rdaApiPrint(String str, long pc) {
+    writer.writeComment(str, pc);
+  }
+
+  // Interceptors hooks.
+
   public static void jlObjectWait(Object obj, long pc) {
-    unlock(obj, pc);
+    writer.writeEvent(EventType.UNLOCK, tid(), pc, System.identityHashCode(obj), 0);
   }
 
   public static void jlObjectWaitAfter(Object obj, long pc) {
-    waitOnObject(obj, pc);
-    writeLock(obj, pc);
+    writer.writeEvent(EventType.WAIT, tid(), pc, System.identityHashCode(obj), 0);
+    writer.writeEvent(EventType.WRITER_LOCK, tid(), pc, System.identityHashCode(obj), 0);
   }
 
   public static void jlObjectNotify(Object obj, long pc) {
-    signalOnObject(obj, pc);
+    writer.writeEvent(EventType.SIGNAL, tid(), pc, System.identityHashCode(obj), 0);
   }
 
   public static void jlSystemArrayCopy(
@@ -205,49 +198,46 @@ public class EventListener {
                       */
   }
 
-  public static void threadsInit() {
-    out.println("THR_START 0 0 0 0");
-    out.println("THR_FIRST_INSN 0 0 0 0");
-  }
-
   public static void jlThreadStart(Thread thr, long pc) {
     long parent_tid = tid();
     long child_tid = thr.getId() - 1;
-    out.println("THR_START " + child_tid + " " + pc + " 0 " + parent_tid);
-    out.println("THR_FIRST_INSN " + child_tid + " " + pc + " 0 0");
+    writer.writeEvent(EventType.THR_START, child_tid, pc, 0, parent_tid);
+    writer.writeEvent(EventType.THR_FIRST_INSN, child_tid, pc, 0, 0);
   }
 
   public static void jlThreadJoin(Thread thr, long pc) {
     long parent_tid = tid();
     long child_tid = thr.getId() - 1;
-    out.println("THR_END " + child_tid + " " + pc + " 0 0");
-    out.println("THR_JOIN_AFTER " + parent_tid + " " + pc + " " + child_tid + " 0");
+    writer.writeEvent(EventType.THR_END, child_tid, pc, 0, 0);
+    writer.writeEvent(EventType.THR_JOIN_AFTER, parent_tid, pc, child_tid, 0);
   }
 
   public static void jucCountDownLatch_countDown(CountDownLatch latch, long pc){
-    signalOnObject(latch, pc);
+    writer.writeEvent(EventType.SIGNAL, tid(), pc, System.identityHashCode(latch), 0);
   }
 
   public static void jucCountDownLatch_await(CountDownLatch latch, long pc){
-    waitOnObject(latch, pc);
+    writer.writeEvent(EventType.WAIT, tid(), pc, System.identityHashCode(latch), 0);
   }
 
   public static void jucSemaphore_release(Semaphore sem, long pc){
-    signalOnObject(sem, pc);
+    writer.writeEvent(EventType.SIGNAL, tid(), pc, System.identityHashCode(sem), 0);
   }
 
   public static void jucSemaphore_acquire(Semaphore sem, long pc){
-    waitOnObject(sem, pc);
+    writer.writeEvent(EventType.WAIT, tid(), pc, System.identityHashCode(sem), 0);
   }
 
   public static void jucRRWL_ReadLock_lock(ReentrantReadWriteLock.ReadLock lock, long pc){
-    readLock(readLockMap.get(lock), pc);
+    writer.writeEvent(EventType.READER_LOCK, tid(), pc,
+                      System.identityHashCode(readLockMap.get(lock)), 0);
   }
 
   public static void jucRRWL_ReadLock_tryLock(
       ReentrantReadWriteLock.ReadLock lock, boolean succeeded, long pc){
     if (succeeded) {
-      readLock(readLockMap.get(lock), pc);
+      writer.writeEvent(EventType.READER_LOCK, tid(), pc,
+                        System.identityHashCode(readLockMap.get(lock)), 0);
     }
   }
 
@@ -256,22 +246,26 @@ public class EventListener {
                                                TimeUnit unused2,
                                                boolean succeeded, long pc){
     if (succeeded) {
-      readLock(readLockMap.get(lock), pc);
+      writer.writeEvent(EventType.READER_LOCK, tid(), pc,
+                        System.identityHashCode(readLockMap.get(lock)), 0);
     }
   }
 
   public static void jucRRWL_ReadLock_unlock(ReentrantReadWriteLock.ReadLock lock, long pc){
-    unlock(readLockMap.get(lock), pc);
+    writer.writeEvent(EventType.UNLOCK, tid(), pc,
+                      System.identityHashCode(readLockMap.get(lock)), 0);
   }
 
   public static void jucRRWL_WriteLock_lock(ReentrantReadWriteLock.WriteLock lock, long pc){
-    writeLock(writeLockMap.get(lock), pc);
+    writer.writeEvent(EventType.WRITER_LOCK, tid(), pc,
+                      System.identityHashCode(writeLockMap.get(lock)), 0);
   }
 
   public static void jucRRWL_WriteLock_tryLock(
       ReentrantReadWriteLock.WriteLock lock, boolean succeeded, long pc){
     if (succeeded) {
-      writeLock(writeLockMap.get(lock), pc);
+      writer.writeEvent(EventType.WRITER_LOCK, tid(), pc,
+                        System.identityHashCode(writeLockMap.get(lock)), 0);
     }
   }
 
@@ -280,53 +274,35 @@ public class EventListener {
                                                 TimeUnit unused2,
                                                 boolean succeeded, long pc){
     if (succeeded) {
-      writeLock(writeLockMap.get(lock), pc);
+      writer.writeEvent(EventType.WRITER_LOCK, tid(), pc,
+                        System.identityHashCode(writeLockMap.get(lock)), 0);
     }
   }
 
   public static void jucRRWL_WriteLock_unlock(ReentrantReadWriteLock.WriteLock lock, long pc){
-    unlock(writeLockMap.get(lock), pc);
+    writer.writeEvent(EventType.UNLOCK, tid(), pc,
+                      System.identityHashCode(writeLockMap.get(lock)), 0);
   }
 
   public static void jucRL_lock(ReentrantLock lock, long pc){
-    writeLock(lock, pc);
+    writer.writeEvent(EventType.WRITER_LOCK, tid(), pc, System.identityHashCode(lock), 0);
   }
 
-  public static void jucRL_tryLock(ReentrantLock lck, boolean returned, long pc) {
+  public static void jucRL_tryLock(ReentrantLock lock, boolean returned, long pc) {
     if (returned) {
-      writeLock(lck, pc);
+      writer.writeEvent(EventType.WRITER_LOCK, tid(), pc, System.identityHashCode(lock), 0);
     }
   }
 
   public static void jucRL_tryLock2(
-      ReentrantLock lck, long timeout, TimeUnit unit, boolean returned, long pc) {
+      ReentrantLock lock, long timeout, TimeUnit unit, boolean returned, long pc) {
     if (returned) {
-      writeLock(lck, pc);
+      writer.writeEvent(EventType.WRITER_LOCK, tid(), pc, System.identityHashCode(lock), 0);
     }
   }
 
   public static void jucRL_unlock(ReentrantLock lock, long pc){
-    unlock(lock, pc);
-  }
-
-  public static void rdaApiNoOp(Object obj, long pc) {
-    // out.println("T" + tid() + " API_NO_OP " + pc);
-  }
-
-  public static void rdaApiExpectRaceBegin(long pc) {
-    out.println("EXPECT_RACE_BEGIN " + tid() + " " + pc + " 0 0");
-  }
-
-  public static void rdaApiExpectRaceEnd(long pc) {
-    out.println("EXPECT_RACE_END " + tid() + " " + pc + " 0 0");
-  }
-
-  public static void rdaApiPrintStackTrace(long pc) {
-    out.println("STACK_TRACE " + tid() + " " + pc + " 0 0");
-  }
-
-  public static void rdaApiPrint(String str, long pc) {
-    out.println("#>" + str);
+    writer.writeEvent(EventType.UNLOCK, tid(), pc, System.identityHashCode(lock), 0);
   }
 
   public static void juclReadLockConstructor(ReentrantReadWriteLock.ReadLock readLock,
@@ -339,13 +315,14 @@ public class EventListener {
     writeLockMap.put(writeLock, outerLock);
   }
   public static void juclCondition_awaitBefore(Condition condition, long pc) {
-    unlock(conditionMap.get(condition), pc);
+    writer.writeEvent(EventType.UNLOCK, tid(), pc,
+                      System.identityHashCode(conditionMap.get(condition)), 0);
   }
 
   public static void juclCondition_awaitAfter(Condition condition, long pc) {
     Lock lock = conditionMap.get(condition);
-    writeLock(lock, pc);
-    waitOnObject(lock, pc);
+    writer.writeEvent(EventType.WRITER_LOCK, tid(), pc, System.identityHashCode(lock), 0);
+    writer.writeEvent(EventType.WAIT, tid(), pc, System.identityHashCode(lock), 0);
   }
 
   public static void juclLock_newCondition(Lock lock, Condition condition, long pc) {
@@ -353,10 +330,12 @@ public class EventListener {
   }
 
   public static void juclCondition_signalAll(Condition condition, long pc) {
-    signalOnObject(condition, pc);
+    writer.writeEvent(EventType.SIGNAL, tid(), pc,
+                      System.identityHashCode(conditionMap.get(condition)), 0);
   }
 
   public static void juclCondition_signal(Condition condition, long pc) {
-    signalOnObject(conditionMap.get(condition), pc);
+    writer.writeEvent(EventType.SIGNAL, tid(), pc,
+                      System.identityHashCode(conditionMap.get(condition)), 0);
   }
 }
