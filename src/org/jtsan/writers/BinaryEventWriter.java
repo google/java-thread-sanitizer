@@ -68,7 +68,8 @@ public class BinaryEventWriter implements EventWriter {
       }
     }
     catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Exception occurred during write event: " +
+          type + " " + tid + " " + pc + " " + address + " " + extra, e);
     }
   }
 
@@ -79,7 +80,8 @@ public class BinaryEventWriter implements EventWriter {
       out.writeUTF(descr);
     }
     catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Exception occurred during write code position " +
+          pc + " with descr: " + descr, e);
     }
   }
 
@@ -89,7 +91,8 @@ public class BinaryEventWriter implements EventWriter {
       out.writeUTF(descr);
     }
     catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Exception occurred during write comment: " +
+          descr + ", pc=" + pc, e);
     }
   }
 }
