@@ -15,8 +15,8 @@
 
 package org.jtsan;
 
-//import org.jtsan.writers.BinAndStrEventWriter;
-//import org.jtsan.writers.BinaryEventWriter;
+import org.jtsan.writers.BinAndStrEventWriter;
+import org.jtsan.writers.BinaryEventWriter;
 import org.jtsan.writers.EventWriter;
 import org.jtsan.writers.NoneEventWriter;
 import org.jtsan.writers.StringEventWriter;
@@ -142,9 +142,9 @@ public class Agent implements ClassFileTransformer {
           } else if (writerName.equals(WRITER_TYPE_NULL)) {
             eventWriter = new NoneEventWriter();
           } else if (writerName.equals(WRITER_TYPE_BINARY)) {
-            //eventWriter = new BinaryEventWriter();
+            eventWriter = new BinaryEventWriter();
           } else if (writerName.equals(WRITER_TYPE_BINSTRDEBUG)) {
-            //eventWriter = new BinAndStrEventWriter();
+            eventWriter = new BinAndStrEventWriter();
           }
         }
       }
