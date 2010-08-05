@@ -24,27 +24,27 @@ package org.jtsan;
 public enum EventType {
 
   // Tsan offline events.
-  EXPECT_RACE_BEGIN,
-  EXPECT_RACE_END,
-  READ,
-  READER_LOCK,
-  RTN_CALL,
-  RTN_EXIT,
-  SBLOCK_ENTER,
-  SIGNAL,
-  STACK_TRACE,
-  THR_END,
-  THR_FIRST_INSN,
-  THR_JOIN_AFTER,
-  THR_START,
-  UNLOCK,
-  WAIT,
-  WRITE,
-  WRITER_LOCK,
+  EXPECT_RACE_BEGIN, // tid pc 0 0
+  EXPECT_RACE_END,   // tid pc 0 0
+  READ, //tid pc id 1
+  READER_LOCK, // tid pc id 0
+  RTN_CALL, // tid 0 0 0
+  RTN_EXIT, // tid pc 0 0
+  SBLOCK_ENTER, // tid pc 0 0
+  SIGNAL, // tid pc id 0
+  STACK_TRACE, // tid pc 0 0
+  THR_END, // tid pc 0 0
+  THR_FIRST_INSN, // 0 0 0 0
+  THR_JOIN_AFTER, // tid pc tid 0
+  THR_START, // 0 0 0 0
+  UNLOCK, // tid pc id 0
+  WAIT, // tid pc id 0
+  WRITE, // tid pc id 1
+  WRITER_LOCK, // tid pc id 0
 
   // Comments, PC events for binary format.
-  COMMENT,
-  CODE_POSITION,
+  COMMENT, // strsize str
+  CODE_POSITION, // pc strsize str
   ;
 
   private EventType() {
