@@ -19,7 +19,7 @@ limitations under the License.
   <target name="compile" description="compile classes">
     <delete dir="bin" />
     <mkdir dir="bin" />
-    <javac srcdir="src" destdir="bin" classpath="deps/asm-3.2/lib/all/asm-all-3.2.jar" >
+    <javac srcdir="src" destdir="bin" classpath="deps/asm-3.2/lib/all/asm-all-3.2.jar" debug="true">
       <compilerarg value="-Xlint"/>
     </javac>
   </target>

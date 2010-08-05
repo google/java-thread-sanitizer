@@ -17,6 +17,8 @@ package org.jtsan.writers;
 
 import org.jtsan.EventType;
 
+import java.io.BufferedOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -27,92 +29,65 @@ import java.io.OutputStream;
  */
 public class BinaryEventWriter implements EventWriter {
 
-  public static final int TYPE_BYTES = 1;
-  public static final int TID_BYTES = 2;
-  public static final int PC_BYTES = 4;
-  public static final int ADDRESS_BYTES = 8;
-  public static final int EXTRA_BYTES = Math.max(TID_BYTES, 1);
-  public static final int STRING_SIZE_BYTES = 2;
-
-  private OutputStream out;
-
-  private static class WritePos {
-    public int getPos() {
-      return pos;
-    }
-
-    public void inc(int x) {
-      this.pos += x;
-    }
-
-    private int pos;
-
-  }
+  private DataOutputStream out;
 
   public void setOutputStream(OutputStream outputStream) {
-    out = outputStream;
+    // TODO : we need buffered this outputStream
+    out = new DataOutputStream(outputStream);
   }
 
-  public void writeEvent(EventType type, long tid, long pc, long address, long extra) {
-    byte[] b = new byte[TYPE_BYTES + TID_BYTES + PC_BYTES + ADDRESS_BYTES + EXTRA_BYTES];
-    WritePos pos = new WritePos();
-    long[] src = new long[]{type.ordinal(), tid, pc, address, extra};
-    int[] sizes = new int[]{TYPE_BYTES, TID_BYTES, PC_BYTES, ADDRESS_BYTES, EXTRA_BYTES};
-    for (int i = 0; i < src.length; i++) {
-      setBytes(src[i], b, pos, sizes[i]);
-    }
-    synchronized (this) {
-      try {
-        out.write(b);
-      } catch (IOException e) {
-        e.printStackTrace(System.err);
+  public synchronized void writeEvent(EventType type, long tid, long pc, long address, long extra) {
+    try {
+      out.writeByte(type.ordinal());
+      switch (type) {
+        case THR_START:
+          out.writeShort((int) extra);
+        case READ :
+        case READER_LOCK :
+        case SIGNAL :
+        case THR_JOIN_AFTER :
+        case UNLOCK :
+        case WAIT :
+        case WRITE :
+        case WRITER_LOCK :
+          out.writeLong(address);
+        case EXPECT_RACE_BEGIN :
+        case EXPECT_RACE_END :
+        case RTN_EXIT :
+        case SBLOCK_ENTER :
+        case STACK_TRACE :
+        case THR_END :
+        case THR_FIRST_INSN :
+          out.writeInt((int) pc);
+        case RTN_CALL :
+          out.writeShort((int) tid);
+        default:
+          break;
       }
     }
-  }
-
-  public void writeCodePosition(long pc, String descr) {
-    byte[] str = descr.getBytes();
-    byte[] b = new byte[TYPE_BYTES + PC_BYTES + STRING_SIZE_BYTES + str.length];
-    WritePos pos = new WritePos();
-    long[] src = new long[]{EventType.CODE_POSITION.ordinal(), pc, str.length};
-    int[] sizes = new int[]{TYPE_BYTES, PC_BYTES, STRING_SIZE_BYTES};
-    for (int i = 0; i < src.length; i++) {
-      setBytes(src[i], b, pos, sizes[i]);
-    }
-    System.arraycopy(str, 0, b, pos.getPos(), str.length);
-    synchronized (this) {
-      try {
-        out.write(b);
-      } catch (IOException e) {
-        e.printStackTrace(System.err);
-      }
+    catch (IOException e) {
+      e.printStackTrace(System.err);
     }
   }
 
-  public void writeComment(String descr, long pc) {
-    byte[] str = descr.getBytes();
-    byte[] b = new byte[TYPE_BYTES + STRING_SIZE_BYTES + str.length];
-    WritePos pos = new WritePos();
-    long[] src = new long[]{EventType.COMMENT.ordinal(), str.length};
-    int[] sizes = new int[]{TYPE_BYTES, STRING_SIZE_BYTES};
-    for (int i = 0; i < src.length; i++) {
-      setBytes(src[i], b, pos, sizes[i]);
+  public synchronized void writeCodePosition(long pc, String descr) {
+    try {
+      out.writeByte(EventType.CODE_POSITION.ordinal());
+      out.writeInt((int) pc);
+      out.writeUTF(descr);
     }
-    System.arraycopy(str, 0, b, pos.getPos(), str.length);
-    synchronized (this) {
-      try {
-        out.write(b);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+    catch (IOException e) {
+      e.printStackTrace(System.err);
     }
   }
 
-  private void setBytes(long src, byte[] des, WritePos pos, int size) {
-    for (int i = 0; i < size; i++) {
-      des[pos.getPos() + size - i - 1] = (byte) ((src & (0xFF << (i << 3))) >> (i << 3));
+  public synchronized void writeComment(String descr, long pc) {
+    try {
+      out.writeByte(EventType.COMMENT.ordinal());
+      out.writeUTF(descr);
     }
-    pos.inc(size);
+    catch (IOException e) {
+      e.printStackTrace(System.err);
+    }
   }
-
 }
