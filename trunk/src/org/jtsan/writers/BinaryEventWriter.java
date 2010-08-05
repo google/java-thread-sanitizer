@@ -32,10 +32,8 @@ public class BinaryEventWriter implements EventWriter {
   private DataOutputStream out;
 
   public void setOutputStream(OutputStream outputStream) {
-    // TODO(vors): Implement buffering for outputStream.
-    // Now it's disabled, because we haven't instrument
-    // to make final flush and lose last 100 events.
-    out = new DataOutputStream(outputStream);
+    // TODO(vors): Implement final buffer flush - now we lose last events.
+    out = new DataOutputStream(new BufferedOutputStream(outputStream));
   }
 
   public synchronized void writeEvent(EventType type, long tid, long pc, long address, long extra) {
