@@ -36,6 +36,7 @@ public class BinaryEventWriter implements EventWriter {
     out = new DataOutputStream(new BufferedOutputStream(outputStream));
   }
 
+  @SuppressWarnings("fallthrough")
   public synchronized void writeEvent(EventType type, long tid, long pc, long address, long extra) {
     try {
       out.writeByte(type.ordinal());
