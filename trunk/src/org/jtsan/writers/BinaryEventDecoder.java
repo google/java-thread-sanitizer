@@ -29,44 +29,47 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 
 /**
- * Executed class, convert binary events output to string format.
+ * Convert binary events output to string format.
  * <p/>
- * Usage: If exist first arg, use it as name of input binary-events file.
- * Otherwise use standard input.
- * If exist second arg, use it as name of output string-events file.
- * Otherwise use standard output.
+ * Usage: java -cp /path/to/agent.jar org.jtsan.writers.BinaryEventDecoder [Input file] [Output file]
  *
  * @author: Sergey Vorobyev
  */
 
 public class BinaryEventDecoder {
 
-  public void setIn(InputStream in) {
-    this.in = new DataInputStream(new BufferedInputStream(in));
-  }
+  private final DataInputStream in;
+  private final PrintWriter out;
 
-  public void setOut(OutputStream out) {
+  public BinaryEventDecoder(InputStream in, OutputStream out) {
+    this.in = new DataInputStream(new BufferedInputStream(in));
     this.out = new PrintWriter(out, true);
   }
 
-  private DataInputStream in;
-  private PrintWriter out;
+  public static void main(String[] args) {
+    InputStream in;
+    OutputStream out;
 
-  public static void main(String[] args) throws IOException {
+    try {
+      if (args.length > 0) {
+        in = new FileInputStream(args[0]);
+      } else {
+        in = System.in;
+      }
 
-    BinaryEventDecoder decoder = new BinaryEventDecoder();
-
-    if (args.length > 0) {
-      decoder.setIn(new FileInputStream(args[0]));
-    } else {
-      decoder.setIn(System.in);
+      if (args.length > 1) {
+        out = new FileOutputStream(args[1]);
+      } else {
+        out = System.out;
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+      System.out.println("Usage: java -cp /path/to/agent.jar " +
+          "org.jtsan.writers.BinaryEventDecoder [Input file] [Output file]");
+      return;
     }
 
-    if (args.length > 1) {
-      decoder.setOut(new FileOutputStream(args[1]));
-    } else {
-      decoder.setOut(System.out);
-    }
+    BinaryEventDecoder decoder = new BinaryEventDecoder(in, out);
     decoder.decode();
   }
 
@@ -74,7 +77,6 @@ public class BinaryEventDecoder {
   public void decode() {
     try {
       while (true) {
-
         int typeOrd = in.readUnsignedByte();
         final EventType type = EventType.values()[typeOrd];
 
@@ -92,15 +94,14 @@ public class BinaryEventDecoder {
       }
 
     } catch (EOFException e) {
-      System.err.println("Read EOF");
-      e.printStackTrace();
+      //System.err.println("Read EOF");
+      //e.printStackTrace();
     } catch (IOException e) {
       throw new RuntimeException("Error during reading events", e);
     } finally {
       out.close();
     }
   }
-
 
   private void processCodePosition() throws IOException {
     int pc = in.readInt();

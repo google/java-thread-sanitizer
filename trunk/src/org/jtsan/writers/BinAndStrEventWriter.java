@@ -29,10 +29,10 @@ import java.io.OutputStream;
  */
 public class BinAndStrEventWriter implements EventWriter {
 
-  BinaryEventWriter binWriter;
-  StringEventWriter strWriter;
+  private final BinaryEventWriter binWriter;
+  private final StringEventWriter strWriter;
 
-  // {@code strWriter} write events to this file.
+  // {@code strWriter} writes events to this file.
   public static final String STR_OUT_FILE = "jtsan.events.debug";
 
   public BinAndStrEventWriter() {
