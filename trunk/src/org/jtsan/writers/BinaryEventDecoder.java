@@ -95,34 +95,40 @@ public class BinaryEventDecoder {
     return res;
   }
 
+  private static void check(boolean b) {
+    if (!b) {
+      throw new RuntimeException(new AssertionError("Assert"));
+    }
+  }
+
   private static void processCodePosition() throws IOException {
-    assert (in.read(bytePC) == BinaryEventWriter.PC_BYTES);
+    check (in.read(bytePC) == BinaryEventWriter.PC_BYTES);
     long pc = getLong(bytePC);
-    assert (in.read(byteStrSize) == BinaryEventWriter.STRING_SIZE_BYTES);
+    check (in.read(byteStrSize) == BinaryEventWriter.STRING_SIZE_BYTES);
     int length = (int) getLong(byteStrSize);
     byte[] buf = new byte[length];
-    assert (in.read(buf) == length);
+    check (in.read(buf) == length);
     String descr = new String(buf);
     out.println("#PC " + pc + " java " + descr);
   }
 
   private static void processComment() throws IOException {
-    assert (in.read(byteStrSize) == BinaryEventWriter.STRING_SIZE_BYTES);
+    check (in.read(byteStrSize) == BinaryEventWriter.STRING_SIZE_BYTES);
     int length = (int) getLong(byteStrSize);
     byte[] buf = new byte[length];
-    assert (in.read(buf) == length);
+    check (in.read(buf) == length);
     String str = new String(buf);
     out.println("#> " + str);
   }
 
   private static void processEvent(EventType type) throws IOException {
-    assert (in.read(byteTid) == BinaryEventWriter.TID_BYTES);
+    check (in.read(byteTid) == BinaryEventWriter.TID_BYTES);
     long tid = getLong(byteTid);
-    assert (in.read(bytePC) == BinaryEventWriter.PC_BYTES);
+    check (in.read(bytePC) == BinaryEventWriter.PC_BYTES);
     long pc = getLong(bytePC);
-    assert (in.read(byteAddress) == BinaryEventWriter.ADDRESS_BYTES);
+    check (in.read(byteAddress) == BinaryEventWriter.ADDRESS_BYTES);
     long address = getLong(byteAddress);
-    assert (in.read(byteExtra) == BinaryEventWriter.EXTRA_BYTES);
+    check (in.read(byteExtra) == BinaryEventWriter.EXTRA_BYTES);
     long extra = getLong(byteExtra);
     out.println(type + " " + tid + " " + pc + " " + address + " " + extra);
   }
