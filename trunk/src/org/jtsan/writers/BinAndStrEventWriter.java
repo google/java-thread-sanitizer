@@ -22,7 +22,8 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 
 /**
- * This class if usefull in debug to check equals of bin and str writers output.
+ * An event writer to dump string output to a file along with the binary output.
+ * Useful for debugging.
  *
  * @author: Sergey Vorobyev
  */
@@ -31,8 +32,7 @@ public class BinAndStrEventWriter implements EventWriter {
   BinaryEventWriter binWriter;
   StringEventWriter strWriter;
 
-  // bin output write to outputStream, that set by Agent
-  // but str output write to this file.
+  // StrWriter write events to this file.
   public static final String STR_OUT_FILE = "jtsan.events.debug";
 
   public BinAndStrEventWriter() {
@@ -41,7 +41,7 @@ public class BinAndStrEventWriter implements EventWriter {
     try {
       strWriter.setOutputStream(new FileOutputStream(STR_OUT_FILE));
     } catch (FileNotFoundException e) {
-      e.printStackTrace();
+      throw new RuntimeException("Failed to open file for writing: " + STR_OUT_FILE, e);
     }
   }
 
