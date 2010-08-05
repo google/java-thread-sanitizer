@@ -75,11 +75,11 @@ public class BinaryEventDecoder {
 
 
   public void decode() {
+    int count = 0;
     try {
       while (true) {
         int typeOrd = in.readUnsignedByte();
         final EventType type = EventType.values()[typeOrd];
-
         switch (type) {
           case CODE_POSITION:
             processCodePosition();
@@ -91,11 +91,10 @@ public class BinaryEventDecoder {
             processEvent(type);
             break;
         }
+        count++;
       }
-
     } catch (EOFException e) {
-      //System.err.println("Read EOF");
-      //e.printStackTrace();
+      System.err.println("INFO: EOF found after write " + count + " lines");
     } catch (IOException e) {
       throw new RuntimeException("Error during reading events", e);
     } finally {
