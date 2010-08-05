@@ -30,7 +30,7 @@ import java.io.PrintWriter;
  * @author: Sergey Vorobyev
  */
 
-public class BinToStrDecoder {
+public class BinaryEventDecoder {
 
   /**
    * Usage: If exist first arg, use it as name of input binary-events file.
