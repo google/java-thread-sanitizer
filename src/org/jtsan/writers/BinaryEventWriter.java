@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * Write to OutputStream tsan events in binary format.
+ * Write to {@code OutputStream} tsan events in binary format.
  *
  * @author Sergey Vorobyev
  */
@@ -32,7 +32,9 @@ public class BinaryEventWriter implements EventWriter {
   private DataOutputStream out;
 
   public void setOutputStream(OutputStream outputStream) {
-    // TODO : we need buffered this outputStream
+    // TODO(vors): Implement buffering for outputStream.
+    // Now it's disabled, because we haven't instrument
+    // to make final flush and lose last 100 events.
     out = new DataOutputStream(outputStream);
   }
 
@@ -66,7 +68,7 @@ public class BinaryEventWriter implements EventWriter {
       }
     }
     catch (IOException e) {
-      e.printStackTrace(System.err);
+      throw new RuntimeException(e);
     }
   }
 
@@ -77,7 +79,7 @@ public class BinaryEventWriter implements EventWriter {
       out.writeUTF(descr);
     }
     catch (IOException e) {
-      e.printStackTrace(System.err);
+      throw new RuntimeException(e);
     }
   }
 
@@ -87,7 +89,7 @@ public class BinaryEventWriter implements EventWriter {
       out.writeUTF(descr);
     }
     catch (IOException e) {
-      e.printStackTrace(System.err);
+      throw new RuntimeException(e);
     }
   }
 }
