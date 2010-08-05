@@ -32,10 +32,22 @@ public class BinaryEventWriter implements EventWriter {
   public static final int PC_BYTES = 2;
   public static final int ADDRESS_BYTES = 4;
   public static final int EXTRA_BYTES = 2;
-
   public static final int STRING_SIZE_BYTES = 2;
 
   private OutputStream out;
+
+  private static class WritePos {
+    public int getPos() {
+      return pos;
+    }
+
+    public void inc(int x) {
+      this.pos += x;
+    }
+
+    private int pos;
+
+  }
 
   public void setOutputStream(OutputStream outputStream) {
     out = outputStream;
@@ -43,16 +55,12 @@ public class BinaryEventWriter implements EventWriter {
 
   public void writeEvent(EventType type, long tid, long pc, long address, long extra) {
     byte[] b = new byte[TYPE_BYTES + TID_BYTES + PC_BYTES + ADDRESS_BYTES + EXTRA_BYTES];
-    int uk = 0;
-    setBytes(type.ordinal(), b, uk, TYPE_BYTES);
-    uk += TYPE_BYTES;
-    setBytes(tid, b, uk, TID_BYTES);
-    uk += TID_BYTES;
-    setBytes(pc, b, uk, PC_BYTES);
-    uk += PC_BYTES;
-    setBytes(address, b, uk, ADDRESS_BYTES);
-    uk += ADDRESS_BYTES;
-    setBytes(extra, b, uk, EXTRA_BYTES);
+    WritePos pos = new WritePos();
+    long[] src = new long[] {type.ordinal(), tid, pc, address, extra};
+    int[] sizes = new int[] {TYPE_BYTES, TID_BYTES, PC_BYTES, ADDRESS_BYTES, EXTRA_BYTES};
+    for (int i=0; i<src.length; i++) {
+      setBytes(src[i], b, pos, sizes[i]);  
+    }
     try {
       out.write(b);
     } catch (IOException e) {
@@ -63,14 +71,13 @@ public class BinaryEventWriter implements EventWriter {
   public void writeCodePosition(long pc, String descr) {
     byte[] str = descr.getBytes();
     byte[] b = new byte[TYPE_BYTES + PC_BYTES + STRING_SIZE_BYTES + str.length];
-    int uk = 0;
-    setBytes(EventType.CODE_POSITION.ordinal(), b, uk, TYPE_BYTES);
-    uk += TYPE_BYTES;
-    setBytes(pc, b, uk, PC_BYTES);
-    uk += PC_BYTES;
-    setBytes(str.length, b, uk, STRING_SIZE_BYTES);
-    uk += STRING_SIZE_BYTES;
-    System.arraycopy(str, 0, b, uk, str.length);
+    WritePos pos = new WritePos();
+    long[] src = new long[] {EventType.CODE_POSITION.ordinal(), pc, str.length};
+    int[] sizes = new int[] {TYPE_BYTES, PC_BYTES, STRING_SIZE_BYTES};
+    for (int i=0; i<src.length; i++) {
+      setBytes(src[i], b, pos, sizes[i]);
+    }
+    System.arraycopy(str, 0, b, pos.getPos(), str.length);
     try {
       out.write(b);
     } catch (IOException e) {
@@ -81,24 +88,25 @@ public class BinaryEventWriter implements EventWriter {
   public void writeComment(String descr, long pc) {
     byte[] str = descr.getBytes();
     byte[] b = new byte[TYPE_BYTES + STRING_SIZE_BYTES + str.length];
-    int uk = 0;
-    setBytes(EventType.COMMENT.ordinal(), b, uk, TYPE_BYTES);
-    uk += TYPE_BYTES;
-    setBytes(str.length, b, uk, STRING_SIZE_BYTES);
-    uk += STRING_SIZE_BYTES;
-    System.arraycopy(str, 0, b, uk, str.length);
+    WritePos pos = new WritePos();
+    long[] src = new long[] {EventType.COMMENT.ordinal(), str.length};
+    int[] sizes = new int[] {TYPE_BYTES, STRING_SIZE_BYTES};
+    for (int i=0; i<src.length; i++) {
+      setBytes(src[i], b, pos, sizes[i]);
+    }
+    System.arraycopy(str, 0, b, pos.getPos(), str.length);
     try {
       out.write(b);
     } catch (IOException e) {
-      e.printStackTrace(System.err);
+      throw new RuntimeException(e);
     }
   }
 
-  private void setBytes(long src, byte[] des, int pos, int length) {
-    for (int i = 0; i < length; i++) {
-      // This line looks ugly but it's simple.
-      des[pos + length - i - 1] = (byte) ((src & (0xFF << (i << 3))) >> (i << 3));
+  private void setBytes(long src, byte[] des, WritePos pos, int size) {
+    for (int i = 0; i < size; i++) {
+      des[pos.getPos() + size - i - 1] = (byte) ((src & (0xFF << (i << 3))) >> (i << 3));
     }
+    pos.inc(size);
   }
 
 }
