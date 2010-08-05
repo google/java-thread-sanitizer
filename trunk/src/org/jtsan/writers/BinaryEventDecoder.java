@@ -26,6 +26,11 @@ import java.io.PrintWriter;
 
 /**
  * Executed class, convert binary events output to string format.
+ * <p/>
+ * Usage: If exist first arg, use it as name of input binary-events file.
+ * Otherwise use standard input.
+ * If exist second arg, use it as name of output string-events file.
+ * Otherwise use standard output.
  *
  * @author: Sergey Vorobyev
  */
@@ -39,13 +44,6 @@ public class BinaryEventDecoder {
   public void setOut(PrintWriter out) {
     this.out = out;
   }
-
-  /**
-   * Usage: If exist first arg, use it as name of input binary-events file.
-   * Otherwise use standard input.
-   * If exist second arg, use it as name of output string-events file.
-   * Otherwise use standard output.
-   */
 
   private InputStream in;
   private PrintWriter out;
@@ -71,28 +69,28 @@ public class BinaryEventDecoder {
       decoder.setOut(new PrintWriter(new FileWriter(args[1]), true));
     } else {
       decoder.setOut(new PrintWriter(System.out, true));
-    }    
+    }
 
   }
 
 
   public void decode() {
     try {
-    while (in.read(byteType) != -1) {
-      EventType type = EventType.values()[(int) getLong(byteType)];
-      switch (type) {
-        case CODE_POSITION:
-          processCodePosition();
-          break;
-        case COMMENT:
-          processComment();
-          break;
-        default:
-          processEvent(type);
-          break;
+      while (in.read(byteType) != -1) {
+        EventType type = EventType.values()[(int) getLong(byteType)];
+        switch (type) {
+          case CODE_POSITION:
+            processCodePosition();
+            break;
+          case COMMENT:
+            processComment();
+            break;
+          default:
+            processEvent(type);
+            break;
+        }
       }
-    }
-    out.close();
+      out.close();
     } catch (IOException e) {
       throw new RuntimeException("Error during reading events", e);
     }
@@ -118,33 +116,33 @@ public class BinaryEventDecoder {
   }
 
   private void processCodePosition() throws IOException {
-    check (in.read(bytePC) == BinaryEventWriter.PC_BYTES);
+    check(in.read(bytePC) == BinaryEventWriter.PC_BYTES);
     long pc = getLong(bytePC);
-    check (in.read(byteStrSize) == BinaryEventWriter.STRING_SIZE_BYTES);
+    check(in.read(byteStrSize) == BinaryEventWriter.STRING_SIZE_BYTES);
     int length = (int) getLong(byteStrSize);
     byte[] buf = new byte[length];
-    check (in.read(buf) == length);
+    check(in.read(buf) == length);
     String descr = new String(buf);
     out.println("#PC " + pc + " java " + descr);
   }
 
   private void processComment() throws IOException {
-    check (in.read(byteStrSize) == BinaryEventWriter.STRING_SIZE_BYTES);
+    check(in.read(byteStrSize) == BinaryEventWriter.STRING_SIZE_BYTES);
     int length = (int) getLong(byteStrSize);
     byte[] buf = new byte[length];
-    check (in.read(buf) == length);
+    check(in.read(buf) == length);
     String str = new String(buf);
     out.println("#> " + str);
   }
 
   private void processEvent(EventType type) throws IOException {
-    check (in.read(byteTid) == BinaryEventWriter.TID_BYTES);
+    check(in.read(byteTid) == BinaryEventWriter.TID_BYTES);
     long tid = getLong(byteTid);
-    check (in.read(bytePC) == BinaryEventWriter.PC_BYTES);
+    check(in.read(bytePC) == BinaryEventWriter.PC_BYTES);
     long pc = getLong(bytePC);
-    check (in.read(byteAddress) == BinaryEventWriter.ADDRESS_BYTES);
+    check(in.read(byteAddress) == BinaryEventWriter.ADDRESS_BYTES);
     long address = getLong(byteAddress);
-    check (in.read(byteExtra) == BinaryEventWriter.EXTRA_BYTES);
+    check(in.read(byteExtra) == BinaryEventWriter.EXTRA_BYTES);
     long extra = getLong(byteExtra);
     out.println(type + " " + tid + " " + pc + " " + address + " " + extra);
   }
