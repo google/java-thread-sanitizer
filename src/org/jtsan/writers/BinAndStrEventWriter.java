@@ -32,7 +32,7 @@ public class BinAndStrEventWriter implements EventWriter {
   BinaryEventWriter binWriter;
   StringEventWriter strWriter;
 
-  // strWriter write events to this file.
+  // {@code strWriter} write events to this file.
   public static final String STR_OUT_FILE = "jtsan.events.debug";
 
   public BinAndStrEventWriter() {
