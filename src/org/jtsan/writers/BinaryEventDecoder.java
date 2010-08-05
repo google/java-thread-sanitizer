@@ -32,6 +32,14 @@ import java.io.PrintWriter;
 
 public class BinaryEventDecoder {
 
+  public void setIn(InputStream in) {
+    this.in = in;
+  }
+
+  public void setOut(PrintWriter out) {
+    this.out = out;
+  }
+
   /**
    * Usage: If exist first arg, use it as name of input binary-events file.
    * Otherwise use standard input.
@@ -39,30 +47,37 @@ public class BinaryEventDecoder {
    * Otherwise use standard output.
    */
 
-  private static InputStream in;
-  private static PrintWriter out;
+  private InputStream in;
+  private PrintWriter out;
 
-  private static byte[] byteType = new byte[BinaryEventWriter.TYPE_BYTES];
-  private static byte[] bytePC = new byte[BinaryEventWriter.PC_BYTES];
-  private static byte[] byteStrSize = new byte[BinaryEventWriter.STRING_SIZE_BYTES];
-  private static byte[] byteTid = new byte[BinaryEventWriter.TID_BYTES];
-  private static byte[] byteAddress = new byte[BinaryEventWriter.ADDRESS_BYTES];
-  private static byte[] byteExtra = new byte[BinaryEventWriter.EXTRA_BYTES];
+  private byte[] byteType = new byte[BinaryEventWriter.TYPE_BYTES];
+  private byte[] bytePC = new byte[BinaryEventWriter.PC_BYTES];
+  private byte[] byteStrSize = new byte[BinaryEventWriter.STRING_SIZE_BYTES];
+  private byte[] byteTid = new byte[BinaryEventWriter.TID_BYTES];
+  private byte[] byteAddress = new byte[BinaryEventWriter.ADDRESS_BYTES];
+  private byte[] byteExtra = new byte[BinaryEventWriter.EXTRA_BYTES];
 
   public static void main(String[] args) throws IOException {
 
+    BinaryEventDecoder decoder = new BinaryEventDecoder();
+
     if (args.length > 0) {
-      in = new BufferedInputStream(new FileInputStream(args[0]));
+      decoder.setIn(new BufferedInputStream(new FileInputStream(args[0])));
     } else {
-      in = new BufferedInputStream(System.in);
+      decoder.setIn(new BufferedInputStream(System.in));
     }
 
     if (args.length > 1) {
-      out = new PrintWriter(new FileWriter(args[1]), true);
+      decoder.setOut(new PrintWriter(new FileWriter(args[1]), true));
     } else {
-      out = new PrintWriter(System.out, true);
-    }
+      decoder.setOut(new PrintWriter(System.out, true));
+    }    
 
+  }
+
+
+  public void decode() {
+    try {
     while (in.read(byteType) != -1) {
       EventType type = EventType.values()[(int) getLong(byteType)];
       switch (type) {
@@ -77,12 +92,13 @@ public class BinaryEventDecoder {
           break;
       }
     }
-
     out.close();
-
+    } catch (IOException e) {
+      throw new RuntimeException("Error during reading events", e);
+    }
   }
 
-  private static long getLong(byte[] src) {
+  private long getLong(byte[] src) {
     long res = 0;
     for (int i = 0; i < src.length; i++) {
       res <<= 8;
@@ -95,13 +111,13 @@ public class BinaryEventDecoder {
     return res;
   }
 
-  private static void check(boolean b) {
+  private void check(boolean b) {
     if (!b) {
       throw new RuntimeException(new AssertionError("Assert"));
     }
   }
 
-  private static void processCodePosition() throws IOException {
+  private void processCodePosition() throws IOException {
     check (in.read(bytePC) == BinaryEventWriter.PC_BYTES);
     long pc = getLong(bytePC);
     check (in.read(byteStrSize) == BinaryEventWriter.STRING_SIZE_BYTES);
@@ -112,7 +128,7 @@ public class BinaryEventDecoder {
     out.println("#PC " + pc + " java " + descr);
   }
 
-  private static void processComment() throws IOException {
+  private void processComment() throws IOException {
     check (in.read(byteStrSize) == BinaryEventWriter.STRING_SIZE_BYTES);
     int length = (int) getLong(byteStrSize);
     byte[] buf = new byte[length];
@@ -121,7 +137,7 @@ public class BinaryEventDecoder {
     out.println("#> " + str);
   }
 
-  private static void processEvent(EventType type) throws IOException {
+  private void processEvent(EventType type) throws IOException {
     check (in.read(byteTid) == BinaryEventWriter.TID_BYTES);
     long tid = getLong(byteTid);
     check (in.read(bytePC) == BinaryEventWriter.PC_BYTES);
