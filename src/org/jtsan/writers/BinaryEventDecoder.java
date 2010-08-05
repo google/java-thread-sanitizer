@@ -114,7 +114,8 @@ public class BinaryEventDecoder {
     String str = in.readUTF();
     out.println("#> " + str);
   }
-
+  
+  @SuppressWarnings("fallthrough")
   private void processEvent(EventType type) throws IOException {
     int tid = 0;
     int pc = 0;
