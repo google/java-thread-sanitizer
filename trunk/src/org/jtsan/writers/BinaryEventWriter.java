@@ -29,9 +29,9 @@ public class BinaryEventWriter implements EventWriter {
 
   public static final int TYPE_BYTES = 1;
   public static final int TID_BYTES = 2;
-  public static final int PC_BYTES = 2;
-  public static final int ADDRESS_BYTES = 4;
-  public static final int EXTRA_BYTES = 2;
+  public static final int PC_BYTES = 4;
+  public static final int ADDRESS_BYTES = 8;
+  public static final int EXTRA_BYTES = Math.max(TID_BYTES, 1);
   public static final int STRING_SIZE_BYTES = 2;
 
   private OutputStream out;
