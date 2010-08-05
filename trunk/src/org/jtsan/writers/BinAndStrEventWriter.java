@@ -49,25 +49,19 @@ public class BinAndStrEventWriter implements EventWriter {
     binWriter.setOutputStream(outputStream);
   }
 
-  public void writeEvent(EventType type, long tid, long pc, long address, long extra) {
-    synchronized (this) {
-      binWriter.writeEvent(type, tid, pc, address, extra);
-      strWriter.writeEvent(type, tid, pc, address, extra);
-    }
+  public synchronized void writeEvent(EventType type, long tid, long pc, long address, long extra) {
+    binWriter.writeEvent(type, tid, pc, address, extra);
+    strWriter.writeEvent(type, tid, pc, address, extra);
   }
 
-  public void writeCodePosition(long pc, String descr) {
-    synchronized (this) {
-      binWriter.writeCodePosition(pc, descr);
-      strWriter.writeCodePosition(pc, descr);
-    }
+  public synchronized void writeCodePosition(long pc, String descr) {
+    binWriter.writeCodePosition(pc, descr);
+    strWriter.writeCodePosition(pc, descr);
   }
 
-  public void writeComment(String str, long pc) {
-    synchronized (this) {
-      binWriter.writeComment(str, pc);
-      strWriter.writeComment(str, pc);
-    }
+  public synchronized void writeComment(String str, long pc) {
+    binWriter.writeComment(str, pc);
+    strWriter.writeComment(str, pc);
   }
 
 }
