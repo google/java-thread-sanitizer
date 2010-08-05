@@ -66,7 +66,7 @@ public class BinaryEventWriter implements EventWriter {
       }
     }
     catch (IOException e) {
-      throw new RuntimeException("Exception occurred during write event: " +
+      throw new RuntimeException("Exception occurred when writing event: " +
           type + " " + tid + " " + pc + " " + address + " " + extra, e);
     }
   }

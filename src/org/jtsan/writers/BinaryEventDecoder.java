@@ -22,7 +22,6 @@ import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -30,10 +29,10 @@ import java.io.PrintWriter;
 
 /**
  * Convert binary events output to string format.
- * <p/>
- * Usage: java -cp /path/to/agent.jar org.jtsan.writers.BinaryEventDecoder [Input file] [Output file]
+ * Usage:
+ * java -cp /path/to/agent.jar org.jtsan.writers.BinaryEventDecoder [Input file] [Output file]
  *
- * @author: Sergey Vorobyev
+ * @author Sergey Vorobyev
  */
 
 public class BinaryEventDecoder {
@@ -63,8 +62,11 @@ public class BinaryEventDecoder {
         out = System.out;
       }
     } catch (IOException e) {
-      e.printStackTrace();
-      System.out.println("Usage: java -cp /path/to/agent.jar " +
+      System.err.println("Error: " + BinaryEventDecoder.class +
+          ": Could not open input or output stream.");
+      System.err.println("Stack trace:");
+      e.printStackTrace(System.err);
+      System.err.println("Usage: java -cp /path/to/agent.jar " +
           "org.jtsan.writers.BinaryEventDecoder [Input file] [Output file]");
       return;
     }
@@ -94,9 +96,9 @@ public class BinaryEventDecoder {
         count++;
       }
     } catch (EOFException e) {
-      System.err.println("INFO: EOF found after write " + count + " lines");
+      System.err.println("INFO: " + count + " lines decoded.");
     } catch (IOException e) {
-      throw new RuntimeException("Error during reading events", e);
+      throw new RuntimeException("IO error happened while decoding.", e);
     } finally {
       out.close();
     }

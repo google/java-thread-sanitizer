@@ -64,39 +64,42 @@ public class Agent implements ClassFileTransformer {
   private static final String DEFAULT_EVENTS_FILE = "jtsan.events";
 
   // Ignore list to eliminate endless recursion.
-  private static String[] ignore = new String[] {
-    "RaceDetectorApi",
-    "org/jtsan",
-    "sun/",
+  private static String[] ignore = new String[]{
+      "RaceDetectorApi",
+      "org/jtsan",
+      "sun/",
 
-    // Classes required by EventListener itself. Triggering events in these will
-    // cause endless recursion.
-    "java/io/PrintWriter",
-    "java/lang/AbstractStringBuilder",
-    "java/lang/Boolean",
-    "java/lang/Class",
-    "java/lang/Long",
-    "java/lang/String",
-    "java/lang/StringBuilder",
-    "java/lang/System",
+      // Classes required by EventListener itself. Triggering events in these will
+      // cause endless recursion.
+      "java/io/PrintWriter",
+      "java/lang/AbstractStringBuilder",
+      "java/lang/Boolean",
+      "java/lang/Class",
+      "java/lang/Long",
+      "java/lang/String",
+      "java/lang/StringBuilder",
+      "java/lang/System",
 
-    // Exclusions to workaround HotSpot internal failures.
-    "java/io/",
-    "java/lang/Math",
-    "java/lang/Thread",
-    "java/lang/ref/",
-    "java/lang/reflect/",
-    "java/nio/",
-    "java/util/Arrays",
+      // Exclusions to workaround HotSpot internal failures.
+      "java/io/",
+      "java/lang/Math",
+      "java/lang/Thread",
+      "java/lang/ref/",
+      "java/lang/reflect/",
+      "java/nio/",
+      "java/util/Arrays",
 
-    // Exclude some internals of java.util.concurrent to avoid false report.
-    // "java/util/concurrent/locks/AbstractQueuedSynchronizer",
-    // "java/util/concurrent/locks/LockSupport",
+      // Exclude some internals of java.util.concurrent to avoid false report.
+      // "java/util/concurrent/locks/AbstractQueuedSynchronizer",
+      // "java/util/concurrent/locks/LockSupport",
 
+      "org/apache/fop/fonts/CodePointMapping",
+      "org/apache/fop/text/linebreak/LineBreakUtils",
+      
   };
 
   // A list of exceptions for the ignore list.
-  private static String[] noignore = new String[] { };
+  private static String[] noignore = new String[]{};
 
   // System methods to intercept.
   private static MethodMapping syncMethods = null;
@@ -107,8 +110,6 @@ public class Agent implements ClassFileTransformer {
 
   private String debugClassPrefix;
 
-  private static EventWriter eventWriter;
-
   public static void premain(String arg, Instrumentation instrumentation) {
     Agent agent = new Agent();
     syncMethods = new MethodMapping();
@@ -118,7 +119,7 @@ public class Agent implements ClassFileTransformer {
     String fname = DEFAULT_EVENTS_FILE;
     boolean retransformSystem = false;
     // The events are written in string form by default.
-    eventWriter = new StringEventWriter();
+    EventWriter eventWriter = new StringEventWriter();
     if (arg != null) {
       String[] args = arg.split(":");
       for (int i = 0; i < args.length; i++) {
@@ -172,7 +173,6 @@ public class Agent implements ClassFileTransformer {
     if (retransformSystem) {
       for (Class c : instrumentation.getAllLoadedClasses()) {
         if (!c.isInterface() && instrumentation.isModifiableClass(c)) {
-          String cs = c.toString();
           try {
             instrumentation.retransformClasses(c);
           } catch (UnmodifiableClassException e) {
@@ -185,10 +185,10 @@ public class Agent implements ClassFileTransformer {
   }
 
   private boolean inIgnoreList(String className) {
-    for (int i = 0; i < ignore.length; i++) {
-      if (className.startsWith(ignore[i])) {
-        for (int j = 0; j < noignore.length; j++) {
-          if (className.startsWith(noignore[j])) {
+    for (String anIgnore : ignore) {
+      if (className.startsWith(anIgnore)) {
+        for (String aNoignore : noignore) {
+          if (className.startsWith(aNoignore)) {
             return false;
           }
         }
@@ -199,7 +199,7 @@ public class Agent implements ClassFileTransformer {
   }
 
   public byte[] transform(ClassLoader loader, String className,
-      Class clazz, java.security.ProtectionDomain domain, byte[] bytes) {
+                          Class clazz, java.security.ProtectionDomain domain, byte[] bytes) {
     try {
       if (inIgnoreList(className)) {
         return bytes;
@@ -212,7 +212,7 @@ public class Agent implements ClassFileTransformer {
       byte[] res;
       // Allow no more than a single instrumentation at a time to making code
       // positions sequential and non-conflicting.
-      synchronized(this) {
+      synchronized (this) {
         ca = newMethodTransformAdapter(this, cw, className, codePos, volatileFields);
         cr.accept(ca, ClassReader.SKIP_FRAMES);
         res = cw.toByteArray();
@@ -224,7 +224,7 @@ public class Agent implements ClassFileTransformer {
     } catch (Exception e) {
       System.out.println(
           "Exception occured during transformation of class " + className +
-          ". Transformed bytes are discarded.");
+              ". Transformed bytes are discarded.");
       e.printStackTrace();
       return bytes;
     }
@@ -276,9 +276,9 @@ public class Agent implements ClassFileTransformer {
   }
 
   private void printTransformedClass(byte[] b) {
-      ClassReader cr = new ClassReader(b);
-      cr.accept(new TraceClassVisitor(new PrintWriter(System.out)),
-                TraceClassVisitor.getDefaultAttributes(),
-                0);
+    ClassReader cr = new ClassReader(b);
+    cr.accept(new TraceClassVisitor(new PrintWriter(System.out)),
+        TraceClassVisitor.getDefaultAttributes(),
+        0);
   }
 }
