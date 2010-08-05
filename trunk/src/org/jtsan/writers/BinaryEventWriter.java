@@ -56,15 +56,17 @@ public class BinaryEventWriter implements EventWriter {
   public void writeEvent(EventType type, long tid, long pc, long address, long extra) {
     byte[] b = new byte[TYPE_BYTES + TID_BYTES + PC_BYTES + ADDRESS_BYTES + EXTRA_BYTES];
     WritePos pos = new WritePos();
-    long[] src = new long[] {type.ordinal(), tid, pc, address, extra};
-    int[] sizes = new int[] {TYPE_BYTES, TID_BYTES, PC_BYTES, ADDRESS_BYTES, EXTRA_BYTES};
-    for (int i=0; i<src.length; i++) {
-      setBytes(src[i], b, pos, sizes[i]);  
+    long[] src = new long[]{type.ordinal(), tid, pc, address, extra};
+    int[] sizes = new int[]{TYPE_BYTES, TID_BYTES, PC_BYTES, ADDRESS_BYTES, EXTRA_BYTES};
+    for (int i = 0; i < src.length; i++) {
+      setBytes(src[i], b, pos, sizes[i]);
     }
-    try {
-      out.write(b);
-    } catch (IOException e) {
-      e.printStackTrace(System.err);
+    synchronized (this) {
+      try {
+        out.write(b);
+      } catch (IOException e) {
+        e.printStackTrace(System.err);
+      }
     }
   }
 
@@ -72,16 +74,18 @@ public class BinaryEventWriter implements EventWriter {
     byte[] str = descr.getBytes();
     byte[] b = new byte[TYPE_BYTES + PC_BYTES + STRING_SIZE_BYTES + str.length];
     WritePos pos = new WritePos();
-    long[] src = new long[] {EventType.CODE_POSITION.ordinal(), pc, str.length};
-    int[] sizes = new int[] {TYPE_BYTES, PC_BYTES, STRING_SIZE_BYTES};
-    for (int i=0; i<src.length; i++) {
+    long[] src = new long[]{EventType.CODE_POSITION.ordinal(), pc, str.length};
+    int[] sizes = new int[]{TYPE_BYTES, PC_BYTES, STRING_SIZE_BYTES};
+    for (int i = 0; i < src.length; i++) {
       setBytes(src[i], b, pos, sizes[i]);
     }
     System.arraycopy(str, 0, b, pos.getPos(), str.length);
-    try {
-      out.write(b);
-    } catch (IOException e) {
-      e.printStackTrace(System.err);
+    synchronized (this) {
+      try {
+        out.write(b);
+      } catch (IOException e) {
+        e.printStackTrace(System.err);
+      }
     }
   }
 
@@ -89,16 +93,18 @@ public class BinaryEventWriter implements EventWriter {
     byte[] str = descr.getBytes();
     byte[] b = new byte[TYPE_BYTES + STRING_SIZE_BYTES + str.length];
     WritePos pos = new WritePos();
-    long[] src = new long[] {EventType.COMMENT.ordinal(), str.length};
-    int[] sizes = new int[] {TYPE_BYTES, STRING_SIZE_BYTES};
-    for (int i=0; i<src.length; i++) {
+    long[] src = new long[]{EventType.COMMENT.ordinal(), str.length};
+    int[] sizes = new int[]{TYPE_BYTES, STRING_SIZE_BYTES};
+    for (int i = 0; i < src.length; i++) {
       setBytes(src[i], b, pos, sizes[i]);
     }
     System.arraycopy(str, 0, b, pos.getPos(), str.length);
-    try {
-      out.write(b);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    synchronized (this) {
+      try {
+        out.write(b);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 
