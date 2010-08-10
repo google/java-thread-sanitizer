@@ -28,6 +28,7 @@ public class Interceptors {
                        "jlSystemArrayCopy");
     map.registerBefore("java/lang/Object", "wait()V", "jlObjectWait");
     map.registerBefore("java/lang/Object", "notify()V", "jlObjectNotify");
+    map.registerBefore("java/lang/Object", "notifyAll()V", "jlObjectNotifyAll");
     map.registerBefore("java/lang/Thread", "start()V", "jlThreadStart");
     map.registerAfter("java/lang/Thread", "join()V", "jlThreadJoin");
     map.registerAfter("java/lang/Object", "wait()V", "jlObjectWaitAfter");

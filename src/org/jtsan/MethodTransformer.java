@@ -122,8 +122,10 @@ public class MethodTransformer extends AdviceAdapter {
   public void visitInsn(final int opcode) {
     if (opcode == MONITORENTER) {
       dup();
+      super.visitInsn(opcode);
       push(genCodePosition());
       captureMonitorEnter();
+      return;
     } else if (opcode == MONITOREXIT) {
       dup();
       push(genCodePosition());

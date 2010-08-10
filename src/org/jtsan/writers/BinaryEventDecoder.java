@@ -77,7 +77,7 @@ public class BinaryEventDecoder {
 
 
   public void decode() {
-    int count = 0;
+    long count = 0;
     try {
       while (true) {
         int typeOrd = in.readUnsignedByte();
