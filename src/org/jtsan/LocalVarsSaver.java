@@ -65,7 +65,7 @@ public class LocalVarsSaver {
       Vector<Type> types, LocalVariablesSorter lvs) {
     Vector<Integer> vars = new Vector<Integer>();
     for (Type type : types) {
-      vars.add(new Integer(lvs.newLocal(type)));
+      vars.add(lvs.newLocal(type));
     }
     return vars;
   }
