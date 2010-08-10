@@ -186,6 +186,10 @@ public class EventListener {
     writer.writeEvent(EventType.SIGNAL, tid(), pc, System.identityHashCode(obj), 0);
   }
 
+  public static void jlObjectNotifyAll(Object obj, long pc) {
+    writer.writeEvent(EventType.SIGNAL, tid(), pc, System.identityHashCode(obj), 0);
+  }
+
   public static void jlSystemArrayCopy(
       Object src, int srcPos, Object dest, int destPos, int length, long pc) {
     /*
