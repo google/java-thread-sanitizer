@@ -16,7 +16,7 @@ limitations under the License.
 <project name="Java Race Detector" default="all">
   <target name="all" depends="compile,jar"/>
 
-  <target name="compile" description="compile classes">
+  <target name="compile" description="compile classes" depends="EventType.java">
     <delete dir="bin" />
     <mkdir dir="bin" />
     <javac srcdir="src" destdir="bin" classpath="deps/asm-3.2/lib/all/asm-all-3.2.jar" debug="true">
@@ -45,6 +45,30 @@ File deps/asm-3.2-bin.zip has incorrect md5sum.
     <echo>Checksum verified.</echo>
     <delete dir="deps/asm-3.2" />
     <unzip src="deps/asm-3.2-bin.zip" dest="deps" />
+    <get verbose="true" usetimestamp="true"
+      src="https://data-race-test.googlecode.com/svn/trunk/tsan/ts_events.h"
+      dest="deps/ts_events.h"/>
+  </target>
+
+  <property name="EventType.java" value="src/org/jtsan/EventType.java"/>
+  <property name="ts_events.h" value="deps/ts_events.h"/>
+  <condition property="EventType.java.notRequired">
+    <and>
+      <available file="${ts_events.h}"/>
+      <uptodate targetfile="${EventType.java}" srcfile="${ts_events.h}"/>
+    </and>
+  </condition>
+
+  <target name="EventType.java" unless="EventType.java.notRequired">
+    <echo>Replacing src/org/jtsan/EventType.java</echo>
+    <property name="jtsan-package" value="org.jtsan"/>
+    <delete file="${EventType.java}"/>
+    <copy file="${ts_events.h}" tofile="${EventType.java}"/>
+    <replaceregexp file="${EventType.java}">
+      <regexp pattern="(.*\n)*enum((.*\n)*?)}(.*(\n))*"/>
+      <substitution expression="// This file generated automatically by ant
+build script\5package ${jtsan-package};\5public enum\2}"/>
+    </replaceregexp>
   </target>
 
   <target name="clean">

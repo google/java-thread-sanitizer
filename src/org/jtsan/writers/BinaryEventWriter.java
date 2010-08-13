@@ -74,7 +74,7 @@ public class BinaryEventWriter implements EventWriter {
 
   public synchronized void writeCodePosition(long pc, String descr) {
     try {
-      out.writeByte(EventType.CODE_POSITION.ordinal());
+      out.writeByte(EventType.PC_DESCRIPTION.ordinal());
       out.writeInt((int) pc);
       out.writeUTF(descr);
     }
@@ -86,7 +86,7 @@ public class BinaryEventWriter implements EventWriter {
 
   public synchronized void writeComment(String descr, long pc) {
     try {
-      out.writeByte(EventType.COMMENT.ordinal());
+      out.writeByte(EventType.PRINT_MESSAGE.ordinal());
       out.writeUTF(descr);
     }
     catch (IOException e) {
