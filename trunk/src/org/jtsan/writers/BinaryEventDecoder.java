@@ -42,7 +42,7 @@ public class BinaryEventDecoder {
 
   public BinaryEventDecoder(InputStream in, OutputStream out) {
     this.in = new DataInputStream(new BufferedInputStream(in));
-    this.out = new PrintWriter(out, true);
+    this.out = new PrintWriter(out, false /* auto-flush */);
   }
 
   public static void main(String[] args) {
@@ -83,10 +83,10 @@ public class BinaryEventDecoder {
         int typeOrd = in.readUnsignedByte();
         final EventType type = EventType.values()[typeOrd];
         switch (type) {
-          case CODE_POSITION:
+          case PC_DESCRIPTION:
             processCodePosition();
             break;
-          case COMMENT:
+          case PRINT_MESSAGE:
             processComment();
             break;
           default:
