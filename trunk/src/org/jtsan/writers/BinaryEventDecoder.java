@@ -107,7 +107,7 @@ public class BinaryEventDecoder {
   private void processCodePosition() throws IOException {
     int pc = in.readInt();
     String descr = in.readUTF();
-    out.println("#PC " + pc + " java " + descr);
+    out.println("#PC " + Integer.toHexString(pc) + " java " + descr);
   }
 
   private void processComment() throws IOException {
@@ -149,7 +149,8 @@ public class BinaryEventDecoder {
       extra = 1;
     }
 
-    out.println(type + " " + tid + " " + pc + " " + address + " " + extra);
+    out.println(type + " " + Integer.toHexString(tid) + " " + Integer.toHexString(pc) + " "
+        + Long.toHexString(address) + " " + Integer.toHexString(extra));
   }
 
 }

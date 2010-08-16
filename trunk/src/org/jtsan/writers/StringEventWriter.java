@@ -34,11 +34,12 @@ public class StringEventWriter implements EventWriter {
   }
 
   public void writeEvent(EventType type, long tid, long pc, long address, long extra) {
-    out.println(type + " " + tid + " " + pc + " " + address + " " + extra);
+    out.println(type + " " + Long.toHexString(tid) + " " + Long.toHexString(pc) + " " 
+        + Long.toHexString(address) + " " + Long.toHexString(extra));
   }
 
   public void writeCodePosition(long pc, String descr) {
-    out.println("#PC " + pc + " java " + descr);
+    out.println("#PC " + Long.toHexString(pc) + " java " + descr);
   }
 
   public void writeComment(String str, long pc) {
