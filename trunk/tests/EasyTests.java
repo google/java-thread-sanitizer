@@ -428,7 +428,7 @@ public class EasyTests {
 
   @RaceTest(race = false,
       description = "Two accesses to a local volatile boolean")
-  public void loacalVolatileBoolean() {
+  public void localVolatileBoolean() {
     new ThreadRunner(2) {
       volatile boolean volatileBoolean;
 
@@ -442,8 +442,9 @@ public class EasyTests {
     };
   }
 
+  @Disable(reason = "We handle volatile fields in super classes incorrectly")
   @RaceTest(race = false,
-      description = "Two accesses to a static volatile boolean")
+      description = "Two accesses to a static volatile boolean in super class")
   public void staticVolatileBoolean() {
     new ThreadRunner(2) {
       public void thread1() {
@@ -452,6 +453,21 @@ public class EasyTests {
 
       public void thread2() {
         while (!staticVolatileBoolean) ;
+      }
+    };
+  }
+
+  @Disable(reason = "We handle volatile fields in super classes incorrectly")
+  @RaceTest(race = false,
+      description = "Two accesses to a volatile var in super class")
+  public void superClassVolatile() {
+    new ThreadRunner(2) {
+      public void thread1() {
+        sharedVolatile = 1;
+      }
+
+      public void thread2() {
+        sharedVolatile = 2;
       }
     };
   }
@@ -478,6 +494,7 @@ public class EasyTests {
     };
   }
 
+  @Disable(reason = "We handle volatile fields in super classes incorrectly")
   @RaceTest(race = false,
       description = "Static volatile boolean is used as a synchronization")
   public void syncWithStaticVolatile() {

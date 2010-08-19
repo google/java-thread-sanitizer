@@ -65,8 +65,7 @@ public class Agent implements ClassFileTransformer {
 
   // Ignore list to eliminate endless recursion.
   private static String[] ignore = new String[]{
-      "org/jtsan",
-      "sun/",
+      "org/jtsan/",
 
       // Classes required by EventListener itself. Triggering events in these will
       // cause endless recursion.
@@ -81,7 +80,6 @@ public class Agent implements ClassFileTransformer {
 
       // Exclusions to workaround HotSpot internal failures.
       "java/io/",
-      "java/lang/Math",
       "java/lang/Thread",
       "java/lang/ref/",
       "java/lang/reflect/",
@@ -89,12 +87,11 @@ public class Agent implements ClassFileTransformer {
       "java/util/Arrays",
 
       // Exclude some internals of java.util.concurrent to avoid false report.
-      // "java/util/concurrent/locks/AbstractQueuedSynchronizer",
-      // "java/util/concurrent/locks/LockSupport",
-
-      "org/apache/fop/fonts/CodePointMapping",
-      "org/apache/fop/text/linebreak/LineBreakUtils",
-      
+      "java/util/concurrent/TimeUnit",
+      "java/util/concurrent/locks/ReentrantReadWriteLock",
+      "java/util/concurrent/locks/AbstractQueuedSynchronizer",
+      "java/util/concurrent/locks/LockSupport",
+      "java/util/concurrent/CyclicBarrier",
   };
 
   // A list of exceptions for the ignore list.
