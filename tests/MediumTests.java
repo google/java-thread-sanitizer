@@ -382,8 +382,8 @@ public class MediumTests {
           }
           sharedVar++;
           lock.writeLock().unlock();
-        } catch (Exception e) {
-          assert false : e;
+        } catch (InterruptedException e) {
+          throw new RuntimeException("Exception in test tryLock", e);
         }
       }
     };
@@ -426,8 +426,8 @@ public class MediumTests {
           }
           sharedVar++;
           lock.unlock();
-        } catch (Exception e) {
-          assert false : e;
+        } catch (InterruptedException e) {
+          throw new RuntimeException("Exception in test tryLock2", e);
         }
       }
 
