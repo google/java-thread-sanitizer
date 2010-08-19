@@ -88,11 +88,12 @@ public class Agent implements ClassFileTransformer {
       "java/util/Arrays",
 
       // Exclude some internals of java.util.concurrent to avoid false report.
+      // TimeUnit is enum. TimeUnit<init>:71 provoke false positive in tryLock test.
       "java/util/concurrent/TimeUnit",
+      // ReentrantReadWriteLock$Sync provoke false positive in tryLock and readAndWriteLocks tests.
       "java/util/concurrent/locks/ReentrantReadWriteLock",
+      // AbstractQueuedSynchronizer$ConditionObject provoke false positive in cyclicBarrier test.
       "java/util/concurrent/locks/AbstractQueuedSynchronizer",
-      "java/util/concurrent/locks/LockSupport",
-      "java/util/concurrent/CyclicBarrier",
   };
 
   // A list of exceptions for the ignore list.

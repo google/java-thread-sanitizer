@@ -23,7 +23,6 @@ limitations under the License.
   <property name="events-file" value="${log-dir}/events"/>
   <property name="tsan-log-file" value="${log-dir}/tsan.log"/>
   <property name="java-log-file" value="${log-dir}/java.log"/>
-  <property name="agent-args" value="logfile=${events-file}:writer=str"/>
 
   <target name="compile" description="compile classes"
           depends="EventType.java">
@@ -56,6 +55,9 @@ limitations under the License.
           depends="test,buildbot-test-fail"/>
 
   <target name="buildbot-test-fail" if="test-fail.run">
+    <loadfile property="tsan-log" srcFile="${tsan-log-file}"/>
+    <echo>=============== TSAN.LOG ===============</echo>
+    <echo>${tsan-log}</echo>
     <loadfile property="events" srcFile="${events-file}"/>
     <echo>================ EVENTS ================</echo>
     <echo>${events}</echo>
@@ -67,7 +69,7 @@ limitations under the License.
     <echo>tsan offline path = ${tsan-offline-path}</echo>
     <java fork="true" jar="dist/tests.jar" output="${java-log-file}">
       <jvmarg value="-Xbootclasspath/p:dist/agent.jar"/>
-      <jvmarg value="-javaagent:dist/agent.jar=${agent-agrs}"/>
+      <jvmarg value="-javaagent:dist/agent.jar=logfile=log/events"/>
     </java>
     <exec executable="${tsan-offline-path}"
           input="${events-file}"
