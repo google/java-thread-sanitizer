@@ -187,7 +187,7 @@ public class EasyTests {
     };
   }
 
-  @Disable(reason = "HashSet load before instrumenting start")
+  @ExcludedTest(reason = "HashSet load before instrumenting start")
   @RaceTest(expectRace = true,
       description = "Two no locked writes to a HashSet")
   public void hashSetAccessNoLocks() {
@@ -256,7 +256,7 @@ public class EasyTests {
     };
   }
 
-  @Disable(reason = "Tsan find inexact happens-before arc")
+  @ExcludedTest(reason = "Tsan find inexact happens-before arc")
   @RaceTest(expectRace = true,
       description = "Two unlocked writes, critcal sections between them")
   public void lockInBetween() {
@@ -442,7 +442,7 @@ public class EasyTests {
     };
   }
 
-  @Disable(reason = "We handle volatile fields in super classes incorrectly")
+  @ExcludedTest(reason = "We handle volatile fields in super classes incorrectly")
   @RaceTest(expectRace = false,
       description = "Two accesses to a static volatile boolean in super class")
   public void staticVolatileBoolean() {
@@ -457,7 +457,7 @@ public class EasyTests {
     };
   }
 
-  @Disable(reason = "We handle volatile fields in super classes incorrectly")
+  @ExcludedTest(reason = "We handle volatile fields in super classes incorrectly")
   @RaceTest(expectRace = false,
       description = "Two accesses to a volatile var in super class")
   public void superClassVolatile() {
@@ -494,7 +494,7 @@ public class EasyTests {
     };
   }
 
-  @Disable(reason = "We handle volatile fields in super classes incorrectly")
+  @ExcludedTest(reason = "We handle volatile fields in super classes incorrectly")
   @RaceTest(expectRace = false,
       description = "Static volatile boolean is used as a synchronization")
   public void syncWithStaticVolatile() {
@@ -739,7 +739,7 @@ public class EasyTests {
   }
 
 
-  @Disable(reason = "Incorrect handle join() in Agent")
+  @ExcludedTest(reason = "Incorrect handle join() in Agent")
   @RaceTest(expectRace = false,
       description = "Join threads without start them")
   public void joinWithoutStart() {

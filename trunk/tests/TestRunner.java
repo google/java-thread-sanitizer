@@ -65,7 +65,7 @@ public class TestRunner {
         out.println("verbose");
       } else if (s.equals(IGNORE_DISABLE_FLAG)) {
         ignoreDisable = true;
-        out.println("Ignore @Disable");
+        out.println("Ignore @ExcludedTest");
       } else if (s.equals(IGNORE_EXPECTED_RACE_FLAG)) {
         ignoreExpectedRace = true;
         out.println("Ignore expected race");
@@ -93,9 +93,9 @@ public class TestRunner {
         if (raceTestAnnotation == null || !includePattern.matcher(methodName).matches()) {
           continue;
         }
-        Disable disableAnnotation = method.getAnnotation(Disable.class);
-        if (disableAnnotation != null) {
-          disableTests.add(new String[] {methodName, disableAnnotation.reason()});
+        ExcludedTest excludedTestAnnotation = method.getAnnotation(ExcludedTest.class);
+        if (excludedTestAnnotation != null) {
+          disableTests.add(new String[] {methodName, excludedTestAnnotation.reason()});
           if (!ignoreDisable) {
             continue;
           }
@@ -104,9 +104,9 @@ public class TestRunner {
           out.println();
         }
         out.println("======== " + methodName + " ========");
-        if (disableAnnotation != null) {
+        if (excludedTestAnnotation != null) {
           out.println("Warning: test excluded by default. Reason: "
-              + disableAnnotation.reason());
+              + excludedTestAnnotation.reason());
         }
         if (verbose) {
           out.println("Description: " + raceTestAnnotation.description());
