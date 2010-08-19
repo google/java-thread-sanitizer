@@ -16,35 +16,65 @@ limitations under the License.
 <project name="Java Race Detector" default="all">
   <target name="all" depends="compile,jar"/>
 
-  <target name="compile" description="compile classes" depends="EventType.java">
-    <delete dir="bin" />
-    <mkdir dir="bin" />
-    <javac srcdir="src" destdir="bin" classpath="deps/asm-3.2/lib/all/asm-all-3.2.jar" debug="true">
+  <property name="debug" value="true"/>
+
+  <target name="compile" description="compile classes"
+    depends="EventType.java">
+    <mkdir dir="bin/agent"/>
+    <javac srcdir="src" destdir="bin/agent" debug="${debug}">
+      <classpath>
+        <pathelement path="deps/asm-3.2/lib/all/asm-all-3.2.jar"/>
+      </classpath>
       <compilerarg value="-Xlint"/>
+    </javac>
+    <mkdir dir="bin/tests"/>
+    <javac srcdir="tests" destdir="bin/tests" debug="${debug}">
+      <classpath>
+        <pathelement path="bin/agent"/>
+      </classpath>
     </javac>
   </target>
 
-  <target name="jar" depends="compile" description="create agent jar">
-    <delete dir="dist" />
-    <mkdir dir="dist" />
-    <jar basedir="bin" destfile="dist/agent.jar" manifest="manifest.mf"/>
+  <target name="jar" depends="compile" description="create jars">
+    <mkdir dir="dist"/>
+    <jar basedir="bin/agent" destfile="dist/agent.jar" manifest="manifest.mf"/>
+    <jar basedir="bin/tests" destfile="dist/tests.jar">
+      <manifest>
+        <attribute name="Main-Class" value="TestRunner"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <property name="tsan-offline-path"
+    value="../../tsan/bin/amd64-linux-debug-ts_offline"/>
+  <property name="events-file" value="events"/>
+  <property name="tsan-log-file" value="tsan.log"/>
+
+  <target name="test" description="run tests under tsan">
+    <echo>tsan offline path = ${tsan-offline-path}</echo>
+    <java fork="true" jar="dist/tests.jar">
+      <jvmarg value="-Xbootclasspath/p:dist/agent.jar"/>
+      <jvmarg value="-javaagent:dist/agent.jar=logfile=events:writer=str"/>
+    </java>
+    <exec executable="${tsan-offline-path}"
+      input="${events-file}" output="${tsan-log-file}"/>
   </target>
 
   <target name="download">
-    <mkdir dir="deps" />
+    <mkdir dir="deps"/>
     <get verbose="true" usetimestamp="true"
       src="http://download.forge.objectweb.org/asm/asm-3.2-bin.zip"
-      dest="deps/asm-3.2-bin.zip" />
-    <checksum file="deps/asm-3.2-bin.zip" property="asmMD5" />
-    <condition property="asmMD5ok" value="true" >
-      <equals arg1="${asmMD5}" arg2="ad95824b9aedfa5b59b096b01f5c5921" />
+      dest="deps/asm-3.2-bin.zip"/>
+    <checksum file="deps/asm-3.2-bin.zip" property="asmMD5"/>
+    <condition property="asmMD5ok" value="true">
+      <equals arg1="${asmMD5}" arg2="ad95824b9aedfa5b59b096b01f5c5921"/>
     </condition>
-    <fail unless="asmMD5ok" >
+    <fail unless="asmMD5ok">
 File deps/asm-3.2-bin.zip has incorrect md5sum.
     </fail>
     <echo>Checksum verified.</echo>
-    <delete dir="deps/asm-3.2" />
-    <unzip src="deps/asm-3.2-bin.zip" dest="deps" />
+    <delete dir="deps/asm-3.2"/>
+    <unzip src="deps/asm-3.2-bin.zip" dest="deps"/>
     <get verbose="true" usetimestamp="true"
       src="https://data-race-test.googlecode.com/svn/trunk/tsan/ts_events.h"
       dest="deps/ts_events.h"/>
@@ -72,10 +102,14 @@ build script\5package ${jtsan-package};\5public enum\2}"/>
   </target>
 
   <target name="clean">
-    <delete dir="dist" />
-    <delete dir="bin" />
+    <delete dir="dist"/>
+    <delete dir="bin"/>
+    <delete file="${events-file}"/>
+    <delete file="${tsan-log-file}"/>
+    <delete file="${EventType.java}"/>
   </target>
+
   <target name="deps-clean">
-    <delete dir="deps" />
+    <delete dir="deps"/>
   </target>
 </project>
