@@ -100,13 +100,12 @@ public class Interceptors {
     // awaitUninterruptibly()
     // awaitUntil(Date)
 
-    // RaceDetectorApi. Put exact matching to eliminate the cost of extra checks.
-    // TODO(egor): methods must be named starting with lowercase letter.
-    map.registerBeforeExact("RaceDetectorApi", "NoOp(Ljava/lang/Object;)V", "rdaApiNoOp");
-    map.registerBeforeExact("RaceDetectorApi", "ExpectRaceBegin()V", "rdaApiExpectRaceBegin");
-    map.registerBeforeExact("RaceDetectorApi", "ExpectRaceEnd()V", "rdaApiExpectRaceEnd");
-    map.registerBeforeExact("RaceDetectorApi", "PrintStackTrace()V", "rdaApiPrintStackTrace");
-    map.registerBeforeExact("RaceDetectorApi", "Print(Ljava/lang/String;)V", "rdaApiPrint");
+    // org.jtsan.RaceDetectorApi. Put exact matching to eliminate the cost of extra checks.
+    map.registerBeforeExact("org/jtsan/RaceDetectorApi", "noOp(Ljava/lang/Object;)V", "rdaApiNoOp");
+    map.registerBeforeExact("org/jtsan/RaceDetectorApi", "expectRaceBegin()V", "rdaApiExpectRaceBegin");
+    map.registerBeforeExact("org/jtsan/RaceDetectorApi", "expectRaceEnd()V", "rdaApiExpectRaceEnd");
+    map.registerBeforeExact("org/jtsan/RaceDetectorApi", "printStackTrace()V", "rdaApiPrintStackTrace");
+    map.registerBeforeExact("org/jtsan/RaceDetectorApi", "print(Ljava/lang/String;)V", "rdaApiPrint");
 
     // Benign race spots in system classes.
     map.benignRaceField("java/util/concurrent/locks/ReentrantReadWriteLock$Sync",

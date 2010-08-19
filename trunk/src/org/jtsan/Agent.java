@@ -65,7 +65,6 @@ public class Agent implements ClassFileTransformer {
 
   // Ignore list to eliminate endless recursion.
   private static String[] ignore = new String[]{
-      "RaceDetectorApi",
       "org/jtsan",
       "sun/",
 
