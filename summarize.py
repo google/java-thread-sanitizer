@@ -14,6 +14,7 @@ exc_re = re.compile("Exception occured during transformation")
 disable_re = re.compile("EXCL (.*)")
 results = {}
 tests = []
+results_tsan = {}
 disable_str = ""
 disabled = 0
 test = ""
@@ -24,6 +25,7 @@ for line in java_log:
     test = m.group(1)
     tests.append(test)
     results[test] = True
+    results_tsan[test] = False
   else:
     match_exc = exc_re.search(line)
   if test != "" and match_exc:
@@ -42,6 +44,7 @@ for line in tsan_log:
   m = test_re.search(line)
   if m:
     test = m.group(1)
+    results_tsan[test] = True
   if notfound_re.search(line):
     results[test] = False
   if found_re.search(line):
@@ -52,13 +55,14 @@ tsan_log.close()
 passed = 0
 failed = 0
 for test in tests:
-  if results[test]:
-    res = "PASS"
-    passed += 1
-  else:
-    res = "FAIL"
-    failed += 1
-  print "%s %s" % (res, test)
+  if results_tsan[test]:
+    if results[test]:
+      res = "PASS"
+      passed += 1
+    else:
+      res = "FAIL"
+      failed += 1
+    print "%s %s" % (res, test)
 print disable_str
 print "----"
 print "passed: %d, failed: %d, excluded: %d, total: %d" % \
