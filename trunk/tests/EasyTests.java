@@ -187,7 +187,7 @@ public class EasyTests {
     };
   }
 
-  @ExcludedTest(reason = "HashSet load before instrumenting start")
+  @ExcludedTest(reason = "HashSet loads before instrumenting start")
   @RaceTest(expectRace = true,
       description = "Two no locked writes to a HashSet")
   public void hashSetAccessNoLocks() {
@@ -256,7 +256,7 @@ public class EasyTests {
     };
   }
 
-  @ExcludedTest(reason = "Tsan find inexact happens-before arc")
+  @ExcludedTest(reason = "Tsan finds inexact happens-before arc")
   @RaceTest(expectRace = true,
       description = "Two unlocked writes, critcal sections between them")
   public void lockInBetween() {
@@ -739,7 +739,7 @@ public class EasyTests {
   }
 
 
-  @ExcludedTest(reason = "Incorrect handle join() in Agent")
+  @ExcludedTest(reason = "Incorrect handling of join() in Agent")
   @RaceTest(expectRace = false,
       description = "Join threads without start them")
   public void joinWithoutStart() {

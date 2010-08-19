@@ -27,12 +27,12 @@ public class TestRunner {
 
   private final String REGEXP_PREFIX = "-test_name=";
   private final String VERBOSE_FLAG = "-verbose";
-  private final String IGNORE_DISABLE_FLAG = "-all";
+  private final String IGNORE_EXCLUDED_FLAG = "-all";
   private final String IGNORE_EXPECTED_RACE_FLAG = "-ignore_expected";
   protected PrintWriter out;
 
   private String regexp;
-  private boolean ignoreDisable;
+  private boolean ignoreExcluded;
   private boolean ignoreExpectedRace;
   private boolean verbose;
   private ArrayList<Object> tests;
@@ -47,7 +47,7 @@ public class TestRunner {
     out = new PrintWriter(System.out, true);
     regexp = ".*";
     verbose = false;
-    ignoreDisable = false;
+    ignoreExcluded = false;
     ignoreExpectedRace = false;
     tests = new ArrayList<Object>();
     // Add instances of classes with @RaceTest annotated methods.
@@ -63,8 +63,8 @@ public class TestRunner {
       } else if (s.equals(VERBOSE_FLAG)) {
         verbose = true;
         out.println("verbose");
-      } else if (s.equals(IGNORE_DISABLE_FLAG)) {
-        ignoreDisable = true;
+      } else if (s.equals(IGNORE_EXCLUDED_FLAG)) {
+        ignoreExcluded = true;
         out.println("Ignore @ExcludedTest");
       } else if (s.equals(IGNORE_EXPECTED_RACE_FLAG)) {
         ignoreExpectedRace = true;
@@ -77,7 +77,7 @@ public class TestRunner {
     out.println(">>>> org.jtsan.TestRunner: START");
     Pattern includePattern = Pattern.compile(regexp);
 
-    ArrayList<String[]> disableTests = new ArrayList<String[]>();
+    ArrayList<String[]> excludedTests = new ArrayList<String[]>();
 
     for (Object testObject : tests) {
       Class testsClass = testObject.getClass();
@@ -95,8 +95,8 @@ public class TestRunner {
         }
         ExcludedTest excludedTestAnnotation = method.getAnnotation(ExcludedTest.class);
         if (excludedTestAnnotation != null) {
-          disableTests.add(new String[] {methodName, excludedTestAnnotation.reason()});
-          if (!ignoreDisable) {
+          excludedTests.add(new String[] {methodName, excludedTestAnnotation.reason()});
+          if (!ignoreExcluded) {
             continue;
           }
         }
@@ -130,10 +130,10 @@ public class TestRunner {
         }
       }
     }
-    if (disableTests.size() > 0) {
-      out.println(">>>> org.jtsan.TestRunner: Exclude test list:");
+    if (excludedTests.size() > 0) {
+      out.println(">>>> org.jtsan.TestRunner: Exclude list:");
     }
-    for (String[] disableTest : disableTests) {
+    for (String[] disableTest : excludedTests) {
       out.printf("EXCL %-30sReason: %s\n", disableTest[0], disableTest[1]);
     }
     out.close();
