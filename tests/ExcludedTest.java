@@ -24,6 +24,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
-public @interface Disable {
+public @interface ExcludedTest {
   String reason() default "N/A";
 }
