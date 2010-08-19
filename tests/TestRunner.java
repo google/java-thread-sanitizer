@@ -128,7 +128,7 @@ public class TestRunner {
       out.println(">>>> org.jtsan.TestRunner: Following tests are disable:");
     }
     for (String[] disableTest : disableTests) {
-      out.println("DISABLE " + disableTest[0] + ". Reason: " + disableTest[1]);
+      out.printf("DISABLE %-30sReason: %s\n", disableTest[0], disableTest[1]);
     }
     out.close();
   }
