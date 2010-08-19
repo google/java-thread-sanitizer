@@ -23,6 +23,7 @@ limitations under the License.
   <property name="events-file" value="${log-dir}/events"/>
   <property name="tsan-log-file" value="${log-dir}/tsan.log"/>
   <property name="java-log-file" value="${log-dir}/java.log"/>
+  <property name="agent-args" value="logfile=${events-file}:writer=str"/>
 
   <target name="compile" description="compile classes"
           depends="EventType.java">
@@ -66,7 +67,7 @@ limitations under the License.
     <echo>tsan offline path = ${tsan-offline-path}</echo>
     <java fork="true" jar="dist/tests.jar" output="${java-log-file}">
       <jvmarg value="-Xbootclasspath/p:dist/agent.jar"/>
-      <jvmarg value="-javaagent:dist/agent.jar=logfile=${events-file}:writer=str"/>
+      <jvmarg value="-javaagent:dist/agent.jar=${agent-agrs}"/>
     </java>
     <exec executable="${tsan-offline-path}"
           input="${events-file}"
@@ -119,8 +120,8 @@ File deps/asm-3.2-bin.zip has incorrect md5sum.
     <copy file="${ts_events.h}" tofile="${EventType.java}"/>
     <replaceregexp file="${EventType.java}">
       <regexp pattern="(.*\n)*enum((.*\n)*?)}(.*(\n))*"/>
-      <substitution expression="// This file generated automatically by ant
-build script\5package ${jtsan-package};\5public enum\2}"/>
+      <substitution expression="// This file generated automatically by
+ant build script\.\5package ${jtsan-package};\5public enum\2}"/>
     </replaceregexp>
   </target>
 

@@ -31,6 +31,12 @@ public class TestRunner {
   private final String IGNORE_EXPECTED_RACE_FLAG = "-ignore_expected";
   protected PrintWriter out;
 
+  private String regexp;
+  private boolean ignoreDisable;
+  private boolean ignoreExpectedRace;
+  private boolean verbose;
+  private ArrayList<Object> tests;
+  
   public static void main(String[] args) {
     TestRunner runner = new TestRunner();
     runner.parseArgs(args);
@@ -99,43 +105,39 @@ public class TestRunner {
         }
         out.println("======== " + methodName + " ========");
         if (disableAnnotation != null) {
-          out.println("Warning: test disabled by default. Reason: "
+          out.println("Warning: test excluded by default. Reason: "
               + disableAnnotation.reason());
         }
         if (verbose) {
           out.println("Description: " + raceTestAnnotation.description());
-          out.println("Race = " + raceTestAnnotation.race());
+          out.println("Race = " + raceTestAnnotation.expectRace());
         }
 
         RaceDetectorApi.print("======== " + methodName + " ========");
         RaceDetectorApi.print("Description: " + raceTestAnnotation.description());
-        RaceDetectorApi.print("Race = " + raceTestAnnotation.race());
+        RaceDetectorApi.print("Race = " + raceTestAnnotation.expectRace());
 
-        if (!ignoreExpectedRace && raceTestAnnotation.race()) {
+        if (!ignoreExpectedRace && raceTestAnnotation.expectRace()) {
           RaceDetectorApi.expectRaceBegin();
         }
         try {
           method.invoke(testObject);
         } catch (Exception e) {
-          throw new RuntimeException("Exception when run test " + methodName, e);
+          throw new RuntimeException("Exception while running test " + methodName, e);
         }
-        if (!ignoreExpectedRace && raceTestAnnotation.race()) {
+        if (!ignoreExpectedRace && raceTestAnnotation.expectRace()) {
           RaceDetectorApi.expectRaceEnd();
         }
       }
     }
     if (disableTests.size() > 0) {
-      out.println(">>>> org.jtsan.TestRunner: Following tests are disable:");
+      out.println(">>>> org.jtsan.TestRunner: Exclude test list:");
     }
     for (String[] disableTest : disableTests) {
-      out.printf("DISABLE %-30sReason: %s\n", disableTest[0], disableTest[1]);
+      out.printf("EXCL %-30sReason: %s\n", disableTest[0], disableTest[1]);
     }
     out.close();
   }
 
-  private String regexp;
-  private boolean ignoreDisable;
-  private boolean ignoreExpectedRace;
-  private boolean verbose;
-  private ArrayList<Object> tests;
+
 }

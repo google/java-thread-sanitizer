@@ -30,7 +30,7 @@ public class EasyTests {
 
   //------------------ Positive tests ---------------------
 
-  @RaceTest(race = true,
+  @RaceTest(expectRace = true,
       description = "Two writes to shared int without synchronization")
   public void noLockWWInt() {
     new ThreadRunner(2) {
@@ -44,7 +44,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = true,
+  @RaceTest(expectRace = true,
       description = "Two writes to shared short without synchronization")
   public void noLockWWShort() {
     new ThreadRunner(2) {
@@ -60,7 +60,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = true,
+  @RaceTest(expectRace = true,
       description = "Two writes to shared char without synchronization")
   public void noLockWWChar() {
     new ThreadRunner(2) {
@@ -76,7 +76,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = true,
+  @RaceTest(expectRace = true,
       description = "Two writes to shared long without synchronization")
   public void noLockWWLong() {
     new ThreadRunner(2) {
@@ -92,7 +92,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = true,
+  @RaceTest(expectRace = true,
       description = "Two writes to shared float without synchronization")
   public void noLockWWFloat() {
     new ThreadRunner(2) {
@@ -108,7 +108,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = true,
+  @RaceTest(expectRace = true,
       description = "Two writes to shared double without synchronization")
   public void noLockWWDouble() {
     new ThreadRunner(2) {
@@ -124,7 +124,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = true,
+  @RaceTest(expectRace = true,
       description = "Two writes to shared Object without synchronization")
   public void noLockWWObject() {
     new ThreadRunner(2) {
@@ -138,7 +138,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = true,
+  @RaceTest(expectRace = true,
       description = "One locked and one no locked write")
   public void lockedVsNoLockedWW() {
     new ThreadRunner(2) {
@@ -154,7 +154,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = true,
+  @RaceTest(expectRace = true,
       description = "One locked and one no locked increment")
   public void lockedVsNoLockedWW2() {
     new ThreadRunner(2) {
@@ -168,7 +168,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = true,
+  @RaceTest(expectRace = true,
       description = "Two writes locked with different locks")
   public void differentLocksWW() {
     new ThreadRunner(2) {
@@ -188,7 +188,7 @@ public class EasyTests {
   }
 
   @Disable(reason = "HashSet load before instrumenting start")
-  @RaceTest(race = true,
+  @RaceTest(expectRace = true,
       description = "Two no locked writes to a HashSet")
   public void hashSetAccessNoLocks() {
     final Set<Integer> sharedHashSet = new HashSet<Integer>();
@@ -204,7 +204,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = true,
+  @RaceTest(expectRace = true,
       description = "Two no locked writes to a TreeMap")
   public void treeMapAccessNoLocks() {
     final Map<Integer, Integer> sharedMap = new TreeMap<Integer, Integer>();
@@ -220,7 +220,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = true,
+  @RaceTest(expectRace = true,
       description = "Two no locked writes to an array")
   public void arrayAccessNoLocks() {
     final int[] sharedArray = new int[100];
@@ -236,7 +236,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = true,
+  @RaceTest(expectRace = true,
       description = "Two writes locked with different locks")
   public void differentLocksWW2() {
     final ReentrantLock lock = new ReentrantLock();
@@ -257,7 +257,7 @@ public class EasyTests {
   }
 
   @Disable(reason = "Tsan find inexact happens-before arc")
-  @RaceTest(race = true,
+  @RaceTest(expectRace = true,
       description = "Two unlocked writes, critcal sections between them")
   public void lockInBetween() {
     new ThreadRunner(2) {
@@ -276,7 +276,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = true,
+  @RaceTest(expectRace = true,
       description = "Three threads writing under a reader lock, one under a writing lock")
   public void writingUnderReaderLock() {
     final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -284,7 +284,7 @@ public class EasyTests {
       public void thread1() {
         lock.readLock().lock();
         int t = sharedVar;
-        shortSleep();  // Put this sleep here so that the race may actually happen.
+        shortSleep();  // Put this sleep here so that the expectRace may actually happen.
         sharedVar = t + 1;
         lock.readLock().unlock();
       }
@@ -305,7 +305,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = true,
+  @RaceTest(expectRace = true,
       description = "Two no locked writes to same object field")
   public void recursiveObjectWW() {
     new ThreadRunner(2) {
@@ -336,7 +336,7 @@ public class EasyTests {
 
   //------------------ Negative tests ---------------------
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "Simple no-operation test")
   public void noOperation() {
     new ThreadRunner(2) {
@@ -350,7 +350,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "No operations")
   public void noOperation2() {
     new ThreadRunner(4) {
@@ -376,7 +376,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "two locked increments")
   public void lockedInc() {
     new ThreadRunner(2) {
@@ -393,7 +393,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "two locked  increments")
   public void lockedInc2() {
     new ThreadRunner(2) {
@@ -408,7 +408,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "Distinct fields of the same object are written")
   public void distinctFields() {
     new ThreadRunner(2) {
@@ -426,7 +426,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "Two accesses to a local volatile boolean")
   public void localVolatileBoolean() {
     new ThreadRunner(2) {
@@ -443,7 +443,7 @@ public class EasyTests {
   }
 
   @Disable(reason = "We handle volatile fields in super classes incorrectly")
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "Two accesses to a static volatile boolean in super class")
   public void staticVolatileBoolean() {
     new ThreadRunner(2) {
@@ -458,7 +458,7 @@ public class EasyTests {
   }
 
   @Disable(reason = "We handle volatile fields in super classes incorrectly")
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "Two accesses to a volatile var in super class")
   public void superClassVolatile() {
     new ThreadRunner(2) {
@@ -472,7 +472,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "Volatile boolean is used as a synchronization")
   public void syncWithLocalVolatile() {
     new ThreadRunner(2) {
@@ -495,7 +495,7 @@ public class EasyTests {
   }
 
   @Disable(reason = "We handle volatile fields in super classes incorrectly")
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "Static volatile boolean is used as a synchronization")
   public void syncWithStaticVolatile() {
     new ThreadRunner(2) {
@@ -515,7 +515,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "Sending a message via a locked object")
   public void messageViaLockedObject() {
     new ThreadRunner(2) {
@@ -542,7 +542,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "Passing ownership via a locked boolean")
   public void passingViaLockedBoolean() {
     new ThreadRunner(2) {
@@ -568,7 +568,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "Passing ownership via a locked map")
   public void passingViaLockedMap() {
     new ThreadRunner(2) {
@@ -600,7 +600,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "Passing object ownership via a locked boolean; 4 threads")
   public void passingViaLockedBoolean2() {
     new ThreadRunner(4) {
@@ -642,7 +642,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "Accessing different fields of object by different threads")
   public void differentFields() {
     new ThreadRunner(4) {
@@ -676,7 +676,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "Accessing different fields of object by different threads")
   public void differentFields2() {
     new ThreadRunner(4) {
@@ -706,7 +706,7 @@ public class EasyTests {
   }
 
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "Two no locked writes to an array at different offsets")
   public void arrayDifferentOffsets() {
     final int[] sharedArray = new int[100];
@@ -722,7 +722,7 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "Write under same lock, but two different methods")
   public void lockedWW() {
     new ThreadRunner(2) {
@@ -740,7 +740,7 @@ public class EasyTests {
 
 
   @Disable(reason = "Incorrect handle join() in Agent")
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "Join threads without start them")
   public void joinWithoutStart() {
     class MyThread extends Thread {

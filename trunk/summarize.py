@@ -11,7 +11,7 @@ print tmpdir
 java_log = open(os.path.join(tmpdir, "java.log"), "r")
 test_re = re.compile("===== ([^ ]+) ====")
 exc_re = re.compile("Exception occured during transformation")
-disable_re = re.compile("DISABLE (.*)")
+disable_re = re.compile("EXCL (.*)")
 results = {}
 tests = []
 disable_str = ""
@@ -53,13 +53,13 @@ passed = 0
 failed = 0
 for test in tests:
   if results[test]:
-    res = " PASS  "
+    res = "PASS"
     passed += 1
   else:
-    res = "!FAIL! "
+    res = "FAIL"
     failed += 1
   print "%s %s" % (res, test)
 print disable_str
 print "----"
-print "passed: %d, failed: %d, disabled: %d, total: %d" % \
+print "passed: %d, failed: %d, excluded: %d, total: %d" % \
 (passed, failed, disabled, passed + failed + disabled)
