@@ -30,19 +30,19 @@ public class ThreadRunner {
 
   // Virtual functions. Override some of them in your test.
   public void thread1() {
-    throw new RuntimeException("thread1() don't override");
+    throw new RuntimeException("thread1() is not overridden");
   }
 
   public void thread2() {
-    throw new RuntimeException("thread2() don't override");
+    throw new RuntimeException("thread2() is not overridden");
   }
 
   public void thread3() {
-    throw new RuntimeException("thread3() don't override");
+    throw new RuntimeException("thread3() is not overridden");
   }
 
   public void thread4() {
-    throw new RuntimeException("thread4() don't override");
+    throw new RuntimeException("thread4() is not overridden");
   }
 
   public void setUp() {
@@ -54,14 +54,16 @@ public class ThreadRunner {
   public void shortSleep() {
     try {
       Thread.sleep(SHORT_SLEEP_MILLIS);
-    } catch (Exception e) {
+    } catch (InterruptedException e) {
+      throw new RuntimeException("InterruptedException while short sleep", e);
     }
   }
 
   public void longSleep() {
     try {
       Thread.sleep(LONG_SLEEP_MILLIS);
-    } catch (Exception e) {
+    } catch (InterruptedException e) {
+      throw new RuntimeException("InterruptedException while long sleep", e);
     }
   }
 
@@ -72,38 +74,29 @@ public class ThreadRunner {
     monitor = new Object();
 
     if (n > 4) {
-      throw new IllegalArgumentException(this.getClass() + " don't support " + n + " threads. "
-          + "Please add support to source.");
-    }
-
-    class ThreadWithRunner extends Thread {
-      public ThreadWithRunner(ThreadRunner runner) {
-        this.runner = runner;
-      }
-
-      protected ThreadRunner runner;
+      throw new IllegalArgumentException(this.getClass() + " doesn't support " + n + " threads.");
     }
 
     Thread threads[] = new Thread[4];
 
-    threads[0] = new ThreadWithRunner(this) {
+    threads[0] = new Thread() {
       public void run() {
-        runner.thread1();
+        thread1();
       }
     };
-    threads[1] = new ThreadWithRunner(this) {
+    threads[1] = new Thread() {
       public void run() {
-        runner.thread2();
+        thread2();
       }
     };
-    threads[2] = new ThreadWithRunner(this) {
+    threads[2] = new Thread() {
       public void run() {
-        runner.thread3();
+        thread3();
       }
     };
-    threads[3] = new ThreadWithRunner(this) {
+    threads[3] = new Thread() {
       public void run() {
-        runner.thread4();
+        thread4();
       }
     };
 
@@ -111,7 +104,6 @@ public class ThreadRunner {
       setUp();
       for (int i = 0; i < n; i++) {
         threads[i].start();
-        Thread.yield();
       }
       for (int i = 0; i < n; i++) {
         threads[i].join();

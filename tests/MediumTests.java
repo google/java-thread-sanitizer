@@ -28,7 +28,7 @@ public class MediumTests {
 
   //------------------ Positive tests ---------------------
 
-  @RaceTest(race = true,
+  @RaceTest(expectRace = true,
       description = "Concurrent access after correct CyclicBarrier")
   public void cyclicBarrierWrong() {
     new ThreadRunner(4) {
@@ -69,7 +69,7 @@ public class MediumTests {
 
   //------------------ Negative tests ---------------------
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "notify/wait")
   public void notifyWait() {
     new ThreadRunner(2) {
@@ -106,7 +106,7 @@ public class MediumTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "notify/wait; 4 threads")
   public void notifyWait2() {
     new ThreadRunner(4) {
@@ -160,7 +160,7 @@ public class MediumTests {
   }
 
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "Two writes to different deep object field")
   public void deepField() {
     new ThreadRunner(2) {
@@ -189,7 +189,7 @@ public class MediumTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "CountDownLatch")
   public void countDownLatch() {
     new ThreadRunner(4) {
@@ -230,7 +230,7 @@ public class MediumTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "After CyclicBarrier only one thread increments shared int")
   public void cyclicBarrier() {
     new ThreadRunner(4) {
@@ -244,6 +244,7 @@ public class MediumTests {
       public void thread1() {
         synchronized (this) {
           sharedVar++;
+          shortSleep();
         }
         try {
           barrier.await();
@@ -267,7 +268,7 @@ public class MediumTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "Semaphore")
   public void semaphore() {
     final Semaphore semaphore = new Semaphore(0);
@@ -290,7 +291,7 @@ public class MediumTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "ReadWriteLock: write locks only")
   public void writeLocksOnly() {
     final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -309,7 +310,7 @@ public class MediumTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "ReadWriteLock: both read and write locks")
   public void readAndWriteLocks() {
     final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -338,7 +339,7 @@ public class MediumTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "ReentrantReadWriteLock: tryLock")
   public void tryLock() {
     final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -385,7 +386,7 @@ public class MediumTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
     description = "ReentrantLock: simple access")
   public void reentrantLockSimple() {
     final ReentrantLock lock = new ReentrantLock();
@@ -402,7 +403,7 @@ public class MediumTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "ReentrantLock: tryLocks")
   public void tryLock2() {
     final ReentrantLock lock = new ReentrantLock();
@@ -435,7 +436,7 @@ public class MediumTests {
     };
   }
 
-  @RaceTest(race = false,
+  @RaceTest(expectRace = false,
       description = "AtomicInteger increment")
   public void atomicInteger() {
     final AtomicInteger i = new AtomicInteger();

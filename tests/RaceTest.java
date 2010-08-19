@@ -26,5 +26,5 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD})
 public @interface RaceTest {
   String description() default "N/A";
-  boolean race() default false;
+  boolean expectRace() default false;
 }
