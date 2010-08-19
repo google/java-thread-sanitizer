@@ -89,6 +89,7 @@ public class MediumTests {
           try {
             wait();
           } catch (Exception e) {
+            throw new RuntimeException("Exception in test notifyWait", e);
           }
         }
       }
@@ -130,6 +131,7 @@ public class MediumTests {
           try {
             wait();
           } catch (Exception e) {
+            throw new RuntimeException("Exception in test notifyWait2", e);
           }
         }
       }
@@ -203,7 +205,8 @@ public class MediumTests {
       public void thread1() {
         try {
           latch.await();
-        } catch (InterruptedException ex) {
+        } catch (InterruptedException e) {
+          throw new RuntimeException("Exception in test CountDownLatch", e);
         }
         if (sharedVar == 3) {
           sharedVar = 4;
