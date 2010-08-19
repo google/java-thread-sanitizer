@@ -19,10 +19,12 @@ limitations under the License.
   <property name="debug" value="true"/>
   <property name="tsan-offline-path"
             value="../../tsan/bin/amd64-linux-debug-ts_offline"/>
-  <property name="events-file" value="events"/>
-  <property name="tsan-log-file" value="tsan.log"/>
+  <property name="log-dir" value="log"/>
+  <property name="events-file" value="${log-dir}/events"/>
+  <property name="tsan-log-file" value="${log-dir}/tsan.log"/>
+  <property name="java-log-file" value="${log-dir}/java.log"/>
 
-    <target name="compile" description="compile classes"
+  <target name="compile" description="compile classes"
           depends="EventType.java">
     <mkdir dir="bin/agent"/>
     <javac srcdir="src" destdir="bin/agent" debug="${debug}">
@@ -49,26 +51,10 @@ limitations under the License.
     </jar>
   </target>
 
+  <target name="buildbot-test"
+          depends="test,buildbot-test-fail"/>
 
-  <target name="buildbot-test" depends="buildbot-run-tests,buildbot-tests-fail"/>
-
-  <target name="buildbot-run-tests" description="run tests under tsan fro buildbot">
-    <echo>tsan offline path = ${tsan-offline-path}</echo>
-    <java fork="true" jar="dist/tests.jar">
-      <jvmarg value="-Xbootclasspath/p:dist/agent.jar"/>
-      <jvmarg value="-javaagent:dist/agent.jar=logfile=events:writer=str"/>
-    </java>
-    <exec executable="${tsan-offline-path}"
-          input="${events-file}"
-          logError="true" resultproperty="exitcode">
-      <arg value="--error_exitcode=1"/>
-    </exec>
-    <condition property="test-fail.run">
-      <equals arg1="${exitcode}" arg2="1"/>
-    </condition>
-  </target>
-
-  <target name="buildbot-tests-fail" if="test-fail.run">
+  <target name="buildbot-test-fail" if="test-fail.run">
     <loadfile property="events" srcFile="${events-file}"/>
     <echo>================ EVENTS ================</echo>
     <echo>${events}</echo>
@@ -76,18 +62,25 @@ limitations under the License.
   </target>
 
   <target name="test" description="run tests under tsan">
+    <mkdir dir="${log-dir}"/>
     <echo>tsan offline path = ${tsan-offline-path}</echo>
-    <java fork="true" jar="dist/tests.jar">
+    <java fork="true" jar="dist/tests.jar" output="${java-log-file}">
       <jvmarg value="-Xbootclasspath/p:dist/agent.jar"/>
-      <jvmarg value="-javaagent:dist/agent.jar=logfile=events:writer=str"/>
+      <jvmarg value="-javaagent:dist/agent.jar=logfile=${events-file}:writer=str"/>
     </java>
     <exec executable="${tsan-offline-path}"
           input="${events-file}"
           output="${tsan-log-file}"
-          resultproperty="exitcode"
-          failonerror="true">
+          resultproperty="exitcode">
       <arg value="--error_exitcode=1"/>
     </exec>
+    <exec executable="python" input="summarize.py">
+      <arg value="-"/>
+      <arg value="${log-dir}"/>
+    </exec>
+    <condition property="test-fail.run">
+      <equals arg1="${exitcode}" arg2="1"/>
+    </condition>
   </target>
 
   <target name="download">
@@ -134,8 +127,7 @@ build script\5package ${jtsan-package};\5public enum\2}"/>
   <target name="clean">
     <delete dir="dist"/>
     <delete dir="bin"/>
-    <delete file="${events-file}"/>
-    <delete file="${tsan-log-file}"/>
+    <delete dir="${log-dir}"/>
     <delete file="${EventType.java}"/>
   </target>
 
