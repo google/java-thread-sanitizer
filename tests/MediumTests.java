@@ -41,7 +41,7 @@ public class MediumTests {
 
       public void thread1() {
         synchronized (this) {
-          sharedVar++;
+          sharedVar++;  
         }
         try {
           barrier.await();

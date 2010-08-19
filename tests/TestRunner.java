@@ -25,9 +25,10 @@ import java.util.regex.Pattern;
  */
 public class TestRunner {
 
-  private final String REGEXP_PREFIX = "-testname=";
+  private final String REGEXP_PREFIX = "-test_name=";
   private final String VERBOSE_FLAG = "-verbose";
   private final String IGNORE_DISABLE_FLAG = "-all";
+  private final String IGNORE_EXPECTED_RACE_FLAG = "-ignore_expected";
   protected PrintWriter out;
 
   public static void main(String[] args) {
@@ -41,6 +42,7 @@ public class TestRunner {
     regexp = ".*";
     verbose = false;
     ignoreDisable = false;
+    ignoreExpectedRace = false;
     tests = new ArrayList<Object>();
     // Add instances of classes with @RaceTest annotated methods.
     tests.add(new EasyTests());
@@ -57,7 +59,10 @@ public class TestRunner {
         out.println("verbose");
       } else if (s.equals(IGNORE_DISABLE_FLAG)) {
         ignoreDisable = true;
-        out.println("Ignore disabled");
+        out.println("Ignore @Disable");
+      } else if (s.equals(IGNORE_EXPECTED_RACE_FLAG)) {
+        ignoreExpectedRace = true;
+        out.println("Ignore expected race");
       }
     }
   }
@@ -65,6 +70,8 @@ public class TestRunner {
   public void run() {
     out.println(">>>> org.jtsan.TestRunner: START");
     Pattern includePattern = Pattern.compile(regexp);
+
+    ArrayList<String[]> disableTests = new ArrayList<String[]>();
 
     for (Object testObject : tests) {
       Class testsClass = testObject.getClass();
@@ -82,6 +89,7 @@ public class TestRunner {
         }
         Disable disableAnnotation = method.getAnnotation(Disable.class);
         if (disableAnnotation != null) {
+          disableTests.add(new String[] {methodName, disableAnnotation.reason()});
           if (!ignoreDisable) {
             continue;
           }
@@ -103,7 +111,7 @@ public class TestRunner {
         RaceDetectorApi.print("Description: " + raceTestAnnotation.description());
         RaceDetectorApi.print("Race = " + raceTestAnnotation.race());
 
-        if (raceTestAnnotation.race()) {
+        if (!ignoreExpectedRace && raceTestAnnotation.race()) {
           RaceDetectorApi.expectRaceBegin();
         }
         try {
@@ -111,16 +119,23 @@ public class TestRunner {
         } catch (Exception e) {
           throw new RuntimeException("Exception when run test " + methodName, e);
         }
-        if (raceTestAnnotation.race()) {
+        if (!ignoreExpectedRace && raceTestAnnotation.race()) {
           RaceDetectorApi.expectRaceEnd();
         }
       }
+    }
+    if (disableTests.size() > 0) {
+      out.println(">>>> org.jtsan.TestRunner: Following tests are disable:");
+    }
+    for (String[] disableTest : disableTests) {
+      out.println(disableTest[0] + ". Reason: " + disableTest[1]);
     }
     out.close();
   }
 
   private String regexp;
   private boolean ignoreDisable;
+  private boolean ignoreExpectedRace;
   private boolean verbose;
   private ArrayList<Object> tests;
 }

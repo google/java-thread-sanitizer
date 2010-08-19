@@ -23,6 +23,7 @@ public class ThreadRunner {
 
   // Shared vars, useful in tests.
   protected int sharedVar = 0;
+  protected volatile int sharedVolatile = 0;
   protected Object sharedObject;
   protected final Object monitor;
   protected static volatile boolean staticVolatileBoolean;
