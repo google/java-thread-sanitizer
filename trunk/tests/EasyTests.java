@@ -283,9 +283,7 @@ public class EasyTests {
     new ThreadRunner(4) {
       public void thread1() {
         lock.readLock().lock();
-        int t = sharedVar;
-        shortSleep();  // Put this sleep here so that the expectRace may actually happen.
-        sharedVar = t + 1;
+        sharedVar++;
         lock.readLock().unlock();
       }
 
