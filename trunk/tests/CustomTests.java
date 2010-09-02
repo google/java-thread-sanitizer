@@ -16,7 +16,7 @@
 /**
  * @author Sergey Vorobyev
  */
-public class CustomerTest {
+public class CustomTests {
 
   static class staticFinalProvider {
     private static final int x = 42;

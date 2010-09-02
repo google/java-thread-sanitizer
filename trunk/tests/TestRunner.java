@@ -56,7 +56,7 @@ public class TestRunner {
     // Add instances of classes with @RaceTest annotated methods.
     tests.add(new EasyTests());
     tests.add(new MediumTests());
-    tests.add(new CustomerTest());
+    tests.add(new CustomTests());
   }
 
   public void parseArgs(String[] args) {

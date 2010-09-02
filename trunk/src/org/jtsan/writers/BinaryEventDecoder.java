@@ -39,6 +39,7 @@ public class BinaryEventDecoder {
 
   private final DataInputStream in;
   private final PrintWriter out;
+  private long lineCount = 0;
 
   public BinaryEventDecoder(InputStream in, OutputStream out) {
     this.in = new DataInputStream(new BufferedInputStream(in));
@@ -76,8 +77,8 @@ public class BinaryEventDecoder {
   }
 
 
+
   public void decode() {
-    long count = 0;
     try {
       while (true) {
         int typeOrd = in.readUnsignedByte();
@@ -93,10 +94,10 @@ public class BinaryEventDecoder {
             processEvent(type);
             break;
         }
-        count++;
+        lineCount++;
       }
     } catch (EOFException e) {
-      System.err.println("INFO: " + count + " lines decoded.");
+      System.err.println("INFO: " + lineCount + " lines decoded.");
     } catch (IOException e) {
       throw new RuntimeException("IO error happened while decoding.", e);
     } finally {
@@ -144,6 +145,10 @@ public class BinaryEventDecoder {
         pc = in.readInt();
       case RTN_CALL:
         tid = in.readUnsignedShort();
+        break;
+      default:
+        throw new UnsupportedOperationException("Unsupported EventType "
+            + type + " " + type.ordinal() + " on " + lineCount + " line");
     }
     if (type == EventType.READ || type == EventType.WRITE) {
       extra = 1;
