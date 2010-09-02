@@ -18,7 +18,11 @@
  */
 public class CustomTests {
 
-  static class HugeMethodProvider {
+  static class staticFinalProvider {
+    private static final int x = hugeMethod();
+    static int getX() {
+      return x;
+    }
     static int hugeMethod() {
       int x = 1;
       int y = 1;
@@ -30,13 +34,7 @@ public class CustomTests {
     }
   }
 
-  static class staticFinalProvider {
-    private static final int x = HugeMethodProvider.hugeMethod();
-    static int getX() {
-      return x;
-    }
-  }
-
+  @ExcludedTest(reason = "Jtsan does not report locks in <clinit>")
   @RaceTest(expectRace = false,
       description = "Static final variable init and access")
   public void staticFinal() {
