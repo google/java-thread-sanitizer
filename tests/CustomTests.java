@@ -19,9 +19,9 @@
 public class CustomTests {
 
   static class staticFinalProvider {
-    private static final int x = hugeMethod();
-    static int getX() {
-      return x;
+    private static final int staticFinalX = hugeMethod();
+    static int getStaticFinalX() {
+      return staticFinalX;
     }
     static int hugeMethod() {
       int x = 1;
@@ -40,7 +40,7 @@ public class CustomTests {
   public void staticFinal() {
     new ThreadRunner(4) {
       public void thread1() {
-        int z = staticFinalProvider.getX();
+        int z = staticFinalProvider.getStaticFinalX();
       }
       public void thread2() {
         thread1();
