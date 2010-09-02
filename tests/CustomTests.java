@@ -44,4 +44,19 @@ public class CustomTests {
       }
     };
   }
+
+  @RaceTest(expectRace = false,
+      description = "Stop thread by throwing Exception")
+  public void exceptionExit() {
+    new ThreadRunner(2) {
+      public synchronized void thread1() {
+        sharedVar++;
+        throw new RuntimeException("Exit from thread1 with this Exception");
+      }
+      public synchronized void thread2() {
+        sharedVar++;
+      }
+    };
+  }
+
 }
