@@ -21,17 +21,19 @@ import java.util.ArrayList;
 import java.util.regex.Pattern;
 
 /**
+ * @author Konstantin Serebryany
  * @author Sergey Vorobyev
  */
 public class TestRunner {
 
-  private final String REGEXP_PREFIX = "-test_name=";
+  private final String REGEXP_PREFIX = "-test_filter=";
   private final String VERBOSE_FLAG = "-verbose";
   private final String IGNORE_EXCLUDED_FLAG = "-all";
   private final String IGNORE_EXPECTED_RACE_FLAG = "-ignore_expected";
   protected PrintWriter out;
 
   private String regexp;
+  private boolean positiveRegexp;
   private boolean ignoreExcluded;
   private boolean ignoreExpectedRace;
   private boolean verbose;
@@ -49,17 +51,25 @@ public class TestRunner {
     verbose = false;
     ignoreExcluded = false;
     ignoreExpectedRace = false;
+    positiveRegexp = true;
     tests = new ArrayList<Object>();
     // Add instances of classes with @RaceTest annotated methods.
     tests.add(new EasyTests());
     tests.add(new MediumTests());
+    tests.add(new CustomerTest());
   }
 
   public void parseArgs(String[] args) {
     for (String s : args) {
       if (s.startsWith(REGEXP_PREFIX)) {
-        regexp = s.substring(REGEXP_PREFIX.length());
-        out.println("test name regexp = " + regexp);
+        if (s.charAt(REGEXP_PREFIX.length()) == '-') {
+          regexp = s.substring(REGEXP_PREFIX.length() + 1);
+          positiveRegexp = false;
+          out.println("test negative filter regexp = " + regexp);
+        } else {
+          regexp = s.substring(REGEXP_PREFIX.length());
+          out.println("test filter regexp = " + regexp);
+        }
       } else if (s.equals(VERBOSE_FLAG)) {
         verbose = true;
         out.println("verbose");
@@ -75,7 +85,7 @@ public class TestRunner {
 
   public void run() {
     out.println(">>>> org.jtsan.TestRunner: START");
-    Pattern includePattern = Pattern.compile(regexp);
+    Pattern pattern = Pattern.compile(regexp);
 
     ArrayList<String[]> excludedTests = new ArrayList<String[]>();
 
@@ -90,7 +100,10 @@ public class TestRunner {
       for (Method method : methods) {
         String methodName = method.getName();
         RaceTest raceTestAnnotation = method.getAnnotation(RaceTest.class);
-        if (raceTestAnnotation == null || !includePattern.matcher(methodName).matches()) {
+        if (raceTestAnnotation == null) {
+          continue;
+        }
+        if (pattern.matcher(methodName).matches() ^ positiveRegexp) {
           continue;
         }
         ExcludedTest excludedTestAnnotation = method.getAnnotation(ExcludedTest.class);

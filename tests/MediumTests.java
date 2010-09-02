@@ -22,7 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * @author Sergey Vorobyev
+ * @author Konstantin Serebryany
  */
 public class MediumTests {
 
