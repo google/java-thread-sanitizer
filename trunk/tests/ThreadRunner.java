@@ -14,7 +14,7 @@
  */
 
 /**
- * @author Sergey Vorobyev
+ * @author Konstantin Serebryany
  */
 public class ThreadRunner {
 
