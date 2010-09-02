@@ -18,8 +18,20 @@
  */
 public class CustomTests {
 
+  static class HugeMethodProvider {
+    static int hugeMethod() {
+      int x = 1;
+      int y = 1;
+      for (int i=0; i<1000000; i++) {
+        x = x + y;
+        y = x - y;
+      }
+      return x;
+    }
+  }
+
   static class staticFinalProvider {
-    private static final int x = 42;
+    private static final int x = HugeMethodProvider.hugeMethod();
     static int getX() {
       return x;
     }
@@ -30,7 +42,6 @@ public class CustomTests {
   public void staticFinal() {
     new ThreadRunner(4) {
       public void thread1() {
-        shortSleep();
         int z = staticFinalProvider.getX();
       }
       public void thread2() {
