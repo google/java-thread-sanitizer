@@ -15,15 +15,12 @@
 
 import org.jtsan.RaceDetectorApi;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-
 /**
+ * Class contains easy tests for jtsan.
+ * Test is easy if
+ * 1) Test doesn't use java primitives outside java.lang package.
+ * 2) Test doesn't use non-trivial synchronized idioms.
+ *
  * @author Konstantin Serebryany
  */
 public class EasyTests {
@@ -187,121 +184,7 @@ public class EasyTests {
     };
   }
 
-  @ExcludedTest(reason = "HashSet loads before instrumenting start")
-  @RaceTest(expectRace = true,
-      description = "Two no locked writes to a HashSet")
-  public void hashSetAccessNoLocks() {
-    final Set<Integer> sharedHashSet = new HashSet<Integer>();
-    new ThreadRunner(2) {
 
-      public void thread1() {
-        sharedHashSet.add(1);
-      }
-
-      public void thread2() {
-        sharedHashSet.add(2);
-      }
-    };
-  }
-
-  @RaceTest(expectRace = true,
-      description = "Two no locked writes to a TreeMap")
-  public void treeMapAccessNoLocks() {
-    final Map<Integer, Integer> sharedMap = new TreeMap<Integer, Integer>();
-    new ThreadRunner(2) {
-
-      public void thread1() {
-        sharedMap.put(1, 2);
-      }
-
-      public void thread2() {
-        sharedMap.put(2, 1);
-      }
-    };
-  }
-
-  @RaceTest(expectRace = true,
-      description = "Two no locked writes to an array")
-  public void arrayAccessNoLocks() {
-    final int[] sharedArray = new int[100];
-    new ThreadRunner(2) {
-
-      public void thread1() {
-        sharedArray[42] = 1;
-      }
-
-      public void thread2() {
-        sharedArray[42] = 2;
-      }
-    };
-  }
-
-  @RaceTest(expectRace = true,
-      description = "Two writes locked with different locks")
-  public void differentLocksWW2() {
-    final ReentrantLock lock = new ReentrantLock();
-    new ThreadRunner(2) {
-
-      public void thread1() {
-        lock.lock();
-        sharedVar++;
-        lock.unlock();
-      }
-
-      public void thread2() {
-        synchronized (this) {
-          sharedVar++;
-        }
-      }
-    };
-  }
-
-  @ExcludedTest(reason = "Tsan finds inexact happens-before arc")
-  @RaceTest(expectRace = true,
-      description = "Two unlocked writes, critcal sections between them")
-  public void lockInBetween() {
-    new ThreadRunner(2) {
-      public void thread1() {
-        sharedVar = 1;
-        synchronized (this) {
-        }
-      }
-
-      public void thread2() {
-        longSleep();
-        synchronized (this) {
-        }
-        sharedVar = 2;
-      }
-    };
-  }
-
-  @RaceTest(expectRace = true,
-      description = "Three threads writing under a reader lock, one under a writing lock")
-  public void writingUnderReaderLock() {
-    final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    new ThreadRunner(4) {
-      public void thread1() {
-        lock.readLock().lock();
-        sharedVar++;
-        lock.readLock().unlock();
-      }
-
-      public void thread2() {
-        thread1();
-      }
-
-      public void thread3() {
-        thread1();
-      }
-
-      public void thread4() {
-        lock.writeLock().lock();
-        sharedVar++;
-        lock.writeLock().unlock();
-      }
-    };
-  }
 
   @RaceTest(expectRace = true,
       description = "Two no locked writes to same object field")
@@ -470,27 +353,6 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(expectRace = false,
-      description = "Volatile boolean is used as a synchronization")
-  public void syncWithLocalVolatile() {
-    new ThreadRunner(2) {
-      volatile boolean volatileBoolean;
-
-      public void setUp() {
-        volatileBoolean = false;
-      }
-
-      public void thread1() {
-        sharedVar = 1;
-        volatileBoolean = true;
-      }
-
-      public void thread2() {
-        while (!volatileBoolean) ;
-        sharedVar = 2;
-      }
-    };
-  }
 
   @ExcludedTest(reason = "We handle volatile fields in super classes incorrectly")
   @RaceTest(expectRace = false,
@@ -513,132 +375,6 @@ public class EasyTests {
     };
   }
 
-  @RaceTest(expectRace = false,
-      description = "Sending a message via a locked object")
-  public void messageViaLockedObject() {
-    new ThreadRunner(2) {
-      Integer locked_object;
-
-      public void thread1() {
-        Integer message = 42;
-        synchronized (this) {
-          locked_object = message;
-        }
-      }
-
-      public void thread2() {
-        Integer message;
-        while (true) {
-          synchronized (this) {
-            message = locked_object;
-            if (message != null) break;
-          }
-          shortSleep();
-        }
-        message++;
-      }
-    };
-  }
-
-  @RaceTest(expectRace = false,
-      description = "Passing ownership via a locked boolean")
-  public void passingViaLockedBoolean() {
-    new ThreadRunner(2) {
-      private boolean signal;
-
-      public void thread1() {
-        sharedVar = 1;
-        longSleep();
-        synchronized (this) {
-          signal = true;
-        }
-      }
-
-      public void thread2() {
-        while (true) {
-          synchronized (this) {
-            if (signal) break;
-          }
-          shortSleep();
-        }
-        sharedVar = 2;
-      }
-    };
-  }
-
-  @RaceTest(expectRace = false,
-      description = "Passing ownership via a locked map")
-  public void passingViaLockedMap() {
-    new ThreadRunner(2) {
-      private Map<Integer, Object> map;
-
-      public void setUp() {
-        map = new TreeMap<Integer, Object>();
-        sharedObject = 0L;
-      }
-
-      public void thread1() {
-        sharedObject = 42;
-        synchronized (this) {
-          map.put(1, sharedObject);
-        }
-      }
-
-      public void thread2() {
-        Integer message;
-        while (true) {
-          synchronized (this) {
-            message = (Integer) map.get(1);
-            if (message != null) break;
-          }
-          shortSleep();
-        }
-        message++;
-      }
-    };
-  }
-
-  @RaceTest(expectRace = false,
-      description = "Passing object ownership via a locked boolean; 4 threads")
-  public void passingViaLockedBoolean2() {
-    new ThreadRunner(4) {
-      Object lock;
-      int counter;
-
-      public void setUp() {
-        sharedObject = 0.0f;
-        lock = new Object();
-        counter = 2;
-      }
-
-      public void thread1() {
-        synchronized (lock) {
-          sharedObject = (Float) sharedObject + 1;
-        }
-        synchronized (this) {
-          counter--;
-        }
-      }
-
-      public void thread2() {
-        thread1();
-      }
-
-      public void thread3() {
-        Integer message;
-        while (true) {
-          synchronized (this) {
-            if (counter == 0) break;
-          }
-          shortSleep();
-        }
-      }
-
-      public void thread4() {
-        thread3();
-      }
-    };
-  }
 
   @RaceTest(expectRace = false,
       description = "Accessing different fields of object by different threads")
@@ -703,22 +439,6 @@ public class EasyTests {
     };
   }
 
-
-  @RaceTest(expectRace = false,
-      description = "Two no locked writes to an array at different offsets")
-  public void arrayDifferentOffsets() {
-    final int[] sharedArray = new int[100];
-    new ThreadRunner(2) {
-
-      public void thread1() {
-        sharedArray[42] = 1;
-      }
-
-      public void thread2() {
-        sharedArray[43] = 2;
-      }
-    };
-  }
 
   @RaceTest(expectRace = false,
       description = "Write under same lock, but two different methods")

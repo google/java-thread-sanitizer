@@ -333,6 +333,10 @@ public class EventListener {
     conditionMap.put(condition, lock);
   }
 
+  public static void juclLock_lockInterruptibly(Lock lock, long pc) {
+    writer.writeEvent(EventType.WRITER_LOCK, tid(), pc, System.identityHashCode(lock), 0);
+  }
+
   public static void juclCondition_signalAll(Condition condition, long pc) {
     writer.writeEvent(EventType.SIGNAL, tid(), pc,
                       System.identityHashCode(conditionMap.get(condition)), 0);

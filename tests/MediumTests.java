@@ -13,56 +13,89 @@
  * limitations under the License.
  */
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
 /**
+ * Class contains medium test for jtsan.
+ * Test it medium if
+ * 1) Test isn't easy (for definition
+ * @see EasyTests).
+ * 2) Test doesn't use java.util.concurrent.
+ *
  * @author Konstantin Serebryany
  */
 public class MediumTests {
 
   //------------------ Positive tests ---------------------
 
+  @ExcludedTest(reason = "HashSet loads before instrumentation starts")
   @RaceTest(expectRace = true,
-      description = "Concurrent access after correct CyclicBarrier")
-  public void cyclicBarrierWrong() {
-    new ThreadRunner(4) {
-      CyclicBarrier barrier;
-
-      public void setUp() {
-        barrier = new CyclicBarrier(4);
-        sharedVar = 0;
-      }
+      description = "Two no locked writes to a HashSet")
+  public void hashSetAccessNoLocks() {
+    final Set<Integer> sharedHashSet = new HashSet<Integer>();
+    new ThreadRunner(2) {
 
       public void thread1() {
+        sharedHashSet.add(1);
+      }
+
+      public void thread2() {
+        sharedHashSet.add(2);
+      }
+    };
+  }
+
+  @RaceTest(expectRace = true,
+      description = "Two unlocked writes to a TreeMap")
+  public void treeMapAccessNoLocks() {
+    final Map<Integer, Integer> sharedMap = new TreeMap<Integer, Integer>();
+    new ThreadRunner(2) {
+
+      public void thread1() {
+        sharedMap.put(1, 2);
+      }
+
+      public void thread2() {
+        sharedMap.put(2, 1);
+      }
+    };
+  }
+
+  @RaceTest(expectRace = true,
+      description = "Two unlocked writes to an array")
+  public void arrayAccessNoLocks() {
+    final int[] sharedArray = new int[100];
+    new ThreadRunner(2) {
+
+      public void thread1() {
+        sharedArray[42] = 1;
+      }
+
+      public void thread2() {
+        sharedArray[42] = 2;
+      }
+    };
+  }
+
+  @ExcludedTest(reason = "Tsan finds inexact happens-before arc")
+  @RaceTest(expectRace = true,
+      description = "Two unlocked writes, critcal sections between them")
+  public void lockInBetween() {
+    new ThreadRunner(2) {
+      public void thread1() {
+        sharedVar = 1;
         synchronized (this) {
-          sharedVar++;  
-        }
-        try {
-          barrier.await();
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
-        if (sharedVar == 4) {
-          sharedVar = 5;
         }
       }
 
       public void thread2() {
-        thread1();
-      }
-
-      public void thread3() {
-        thread1();
-      }
-
-      public void thread4() {
-        thread1();
+        longSleep();
+        synchronized (this) {
+        }
+        sharedVar = 2;
       }
     };
   }
@@ -192,261 +225,133 @@ public class MediumTests {
   }
 
   @RaceTest(expectRace = false,
-      description = "CountDownLatch")
-  public void countDownLatch() {
-    new ThreadRunner(4) {
-      CountDownLatch latch;
+      description = "Passing ownership via a locked map")
+  public void passingViaLockedMap() {
+    new ThreadRunner(2) {
+      private Map<Integer, Object> map;
 
       public void setUp() {
-        latch = new CountDownLatch(3);
-        sharedVar = 0;
+        map = new TreeMap<Integer, Object>();
+        sharedObject = 0L;
       }
 
       public void thread1() {
-        try {
-          latch.await();
-        } catch (InterruptedException e) {
-          throw new RuntimeException("Exception in test CountDownLatch", e);
-        }
-        if (sharedVar == 3) {
-          sharedVar = 4;
-        } else {
-          System.err.println("CountDownLatch assert");
-          System.exit(1);
+        sharedObject = 42;
+        synchronized (this) {
+          map.put(1, sharedObject);
         }
       }
 
       public void thread2() {
-        synchronized (this) {
-          sharedVar++;
-        }
-        latch.countDown();
-      }
-
-      public void thread3() {
-        thread2();
-      }
-
-      public void thread4() {
-        thread2();
-      }
-    };
-  }
-
-  @RaceTest(expectRace = false,
-      description = "After CyclicBarrier only one thread increments shared int")
-  public void cyclicBarrier() {
-    new ThreadRunner(4) {
-      CyclicBarrier barrier;
-
-      public void setUp() {
-        barrier = new CyclicBarrier(4);
-        sharedVar = 0;
-      }
-
-      public void thread1() {
-        synchronized (this) {
-          sharedVar++;
+        Integer message;
+        while (true) {
+          synchronized (this) {
+            message = (Integer) map.get(1);
+            if (message != null) break;
+          }
           shortSleep();
         }
-        try {
-          barrier.await();
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
-      }
-
-      public void thread2() {
-        thread1();
-      }
-
-      public void thread3() {
-        thread1();
-      }
-
-      public void thread4() {
-        thread1();
-        sharedVar++;
+        message++;
       }
     };
   }
 
   @RaceTest(expectRace = false,
-      description = "Semaphore")
-  public void semaphore() {
-    final Semaphore semaphore = new Semaphore(0);
+      description = "Volatile boolean is used as a synchronization")
+  public void syncWithLocalVolatile() {
     new ThreadRunner(2) {
+      volatile boolean volatileBoolean;
+
+      public void setUp() {
+        volatileBoolean = false;
+      }
 
       public void thread1() {
-        longSleep();
         sharedVar = 1;
-        semaphore.release();
+        volatileBoolean = true;
       }
 
       public void thread2() {
-        try {
-          semaphore.acquire();
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
+        while (!volatileBoolean) ;
         sharedVar = 2;
       }
     };
   }
 
   @RaceTest(expectRace = false,
-      description = "ReadWriteLock: write locks only")
-  public void writeLocksOnly() {
-    final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+      description = "Sending a message via a locked object")
+  public void messageViaLockedObject() {
     new ThreadRunner(2) {
+      Integer locked_object;
+
       public void thread1() {
-        lock.writeLock().lock();
-        int v = sharedVar;
-        lock.writeLock().unlock();
+        Integer message = 42;
+        synchronized (this) {
+          locked_object = message;
+        }
       }
 
       public void thread2() {
-        lock.writeLock().lock();
-        sharedVar++;
-        lock.writeLock().unlock();
-      }
-    };
-  }
-
-  @RaceTest(expectRace = false,
-      description = "ReadWriteLock: both read and write locks")
-  public void readAndWriteLocks() {
-    final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    new ThreadRunner(4) {
-      public void thread1() {
-        lock.readLock().lock();
-        int v = sharedVar;
-        lock.readLock().unlock();
-      }
-
-      public void thread2() {
-        thread1();
-      }
-
-      public void thread3() {
-        lock.writeLock().lock();
-        int v = sharedVar;
-        lock.writeLock().unlock();
-      }
-
-      public void thread4() {
-        lock.writeLock().lock();
-        sharedVar++;
-        lock.writeLock().unlock();
-      }
-    };
-  }
-
-  @RaceTest(expectRace = false,
-      description = "ReentrantReadWriteLock: tryLock")
-  public void tryLock() {
-    final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    new ThreadRunner(4) {
-      public void thread1() {
-        while (!lock.readLock().tryLock()) {
+        Integer message;
+        while (true) {
+          synchronized (this) {
+            message = locked_object;
+            if (message != null) break;
+          }
           shortSleep();
         }
-        int v = sharedVar;
-        lock.readLock().unlock();
-      }
-
-      public void thread2() {
-        try {
-          while (!lock.readLock().tryLock(1, TimeUnit.MILLISECONDS)) {
-            shortSleep();
-          }
-          int v = sharedVar;
-          lock.readLock().unlock();
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
-      }
-
-      public void thread3() {
-        while (!lock.writeLock().tryLock()) {
-          shortSleep();
-        }
-        sharedVar++;
-        lock.writeLock().unlock();
-      }
-
-      public void thread4() {
-        try {
-          while (!lock.writeLock().tryLock(1, TimeUnit.MILLISECONDS)) {
-            shortSleep();
-          }
-          sharedVar++;
-          lock.writeLock().unlock();
-        } catch (InterruptedException e) {
-          throw new RuntimeException("Exception in test tryLock", e);
-        }
+        message++;
       }
     };
   }
 
   @RaceTest(expectRace = false,
-    description = "ReentrantLock: simple access")
-  public void reentrantLockSimple() {
-    final ReentrantLock lock = new ReentrantLock();
+      description = "Passing ownership via a locked boolean")
+  public void passingViaLockedBoolean() {
     new ThreadRunner(2) {
+      private boolean signal;
+
       public void thread1() {
-        lock.lock();
-        sharedVar++;
-        lock.unlock();
+        sharedVar = 1;
+        longSleep();
+        synchronized (this) {
+          signal = true;
+        }
       }
 
       public void thread2() {
-        thread1();
-      }
-    };
-  }
-
-  @RaceTest(expectRace = false,
-      description = "ReentrantLock: tryLocks")
-  public void tryLock2() {
-    final ReentrantLock lock = new ReentrantLock();
-    new ThreadRunner(3) {
-      public void thread1() {
-        while (!lock.tryLock()) {
+        while (true) {
+          synchronized (this) {
+            if (signal) break;
+          }
           shortSleep();
         }
-        sharedVar++;
-        lock.unlock();
-      }
-
-      public void thread2() {
-        try {
-          while (!lock.tryLock(1, TimeUnit.MILLISECONDS)) {
-            shortSleep();
-          }
-          sharedVar++;
-          lock.unlock();
-        } catch (InterruptedException e) {
-          throw new RuntimeException("Exception in test tryLock2", e);
-        }
-      }
-
-      public void thread3() {
-        lock.lock();
-        sharedVar++;
-        lock.unlock();
+        sharedVar = 2;
       }
     };
   }
 
+
   @RaceTest(expectRace = false,
-      description = "AtomicInteger increment")
-  public void atomicInteger() {
-    final AtomicInteger i = new AtomicInteger();
+      description = "Passing object ownership via a locked boolean; 4 threads")
+  public void passingViaLockedBoolean2() {
     new ThreadRunner(4) {
+      Object lock;
+      int counter;
+
+      public void setUp() {
+        sharedObject = 0.0f;
+        lock = new Object();
+        counter = 2;
+      }
 
       public void thread1() {
-        i.incrementAndGet();
+        synchronized (lock) {
+          sharedObject = (Float) sharedObject + 1;
+        }
+        synchronized (this) {
+          counter--;
+        }
       }
 
       public void thread2() {
@@ -454,13 +359,36 @@ public class MediumTests {
       }
 
       public void thread3() {
-        thread1();
+        Integer message;
+        while (true) {
+          synchronized (this) {
+            if (counter == 0) break;
+          }
+          shortSleep();
+        }
       }
 
       public void thread4() {
-        thread1();
+        thread3();
       }
     };
-  }  
+  }
+
+  @RaceTest(expectRace = false,
+      description = "Two unlocked writes to an array at different offsets")
+  public void arrayDifferentOffsets() {
+    final int[] sharedArray = new int[100];
+    new ThreadRunner(2) {
+
+      public void thread1() {
+        sharedArray[42] = 1;
+      }
+
+      public void thread2() {
+        sharedArray[43] = 2;
+      }
+    };
+  }
+
 
 }

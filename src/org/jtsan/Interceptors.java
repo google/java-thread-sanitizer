@@ -84,6 +84,9 @@ public class Interceptors {
     map.registerAfter("java/util/concurrent/locks/Lock",
                       "newCondition()Ljava/util/concurrent/locks/Condition;",
                       "juclLock_newCondition");
+    map.registerAfter("java/util/concurrent/locks/Lock",
+                      "lockInterruptibly()V",
+                      "juclLock_lockInterruptibly");
 
     // java.util.concurrent.Condition
     map.registerBefore("java/util/concurrent/locks/Condition", "await()V",

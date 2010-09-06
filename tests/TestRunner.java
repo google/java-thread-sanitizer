@@ -57,6 +57,7 @@ public class TestRunner {
     tests.add(new EasyTests());
     tests.add(new MediumTests());
     tests.add(new CustomTests());
+    tests.add(new JUConcurrentTests());
   }
 
   public void parseArgs(String[] args) {
