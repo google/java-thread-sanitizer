@@ -37,17 +37,14 @@ java_log.close()
 
 # Parse offline ThreadSanitizer output.
 tsan_log = open(os.path.join(tmpdir, "tsan.log"), "r")
-notfound_re = re.compile("WARNING: expected race not found.")
-found_re = re.compile("WARNING: Possible data race")
+warning_re = re.compile("WARNING:")
 test = ""
 for line in tsan_log:
   m = test_re.search(line)
   if m:
     test = m.group(1)
     results_tsan[test] = True
-  if notfound_re.search(line):
-    results[test] = False
-  if found_re.search(line):
+  if warning_re.search(line):
     results[test] = False
 tsan_log.close()
 
