@@ -146,6 +146,7 @@ public class MethodTransformer extends AdviceAdapter {
 
   @Override
   public void visitLineNumber(int line, Label start) {
+    super.visitLineNumber(line, start);
     this.line = line;
     codePos.line(line, lazyDescr);
   }

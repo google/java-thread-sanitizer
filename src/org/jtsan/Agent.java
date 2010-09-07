@@ -219,9 +219,13 @@ public class Agent implements ClassFileTransformer {
         }
       }
       return res;
+    } catch (CodeSizeLimiter.MethodTooLongException e) {
+      System.out.println("Too long method code: " + className + "." + e.getMethodName() +
+          "\nTransformed bytes of class " + className + " are discarded.");
+      return bytes;
     } catch (Exception e) {
       System.out.println(
-          "Exception occured during transformation of class " + className +
+          "Exception occurred during transformation of class " + className +
               ". Transformed bytes are discarded.");
       e.printStackTrace();
       return bytes;
@@ -240,7 +244,7 @@ public class Agent implements ClassFileTransformer {
 
       /*
        * Compose a chain of visitors:
-       *   MethodTransformer -> LocalVariablesSorter -> MethodVisitor
+       *   MethodTransformer -> LocalVariablesSorter -> CodeSizeLimiter -> MethodVisitor
        */
       public MethodVisitor visitMethod(
           int access, String name, String desc,
@@ -249,7 +253,8 @@ public class Agent implements ClassFileTransformer {
             access, name, desc, signature, exceptions);
         String signatureStr = (null == signature ? "" : signature);
         String fullMethodName = className + "." + name + signatureStr;
-        LocalVariablesSorter sorter = new LocalVariablesSorter(access, desc, mv);
+        CodeSizeLimiter csl = new CodeSizeLimiter(mv, name);
+        LocalVariablesSorter sorter = new LocalVariablesSorter(access, desc, csl);
         MethodTransformer transformer = new MethodTransformer(
             myself, sorter, access, name, fullMethodName, desc, source, syncMethods, codePos,
             volatileFields);
