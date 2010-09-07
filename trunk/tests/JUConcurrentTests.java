@@ -129,16 +129,16 @@ public class JUConcurrentTests {
     final int iter = 1000;
     new ThreadRunner(4) {
 
-      BlockingQueue q;
+      BlockingQueue<Integer> q;
 
       public void setUp() {
-        q = new ArrayBlockingQueue(capacity);
+        q = new ArrayBlockingQueue<Integer>(capacity);
       }
 
       public void thread1() {
         try {
           for (int i = 0; i < iter; i++) {
-            q.put(Integer.valueOf(i));
+            q.put(i);
           }
         } catch (InterruptedException ex) {
           throw new RuntimeException("Exception in arrayBlockingQueue test", ex);
@@ -148,7 +148,7 @@ public class JUConcurrentTests {
       public void thread2() {
         try {
           for (int i = 0; i < iter; i++) {
-            Object o = q.take();
+            Integer o = q.take();
           }
         } catch (InterruptedException ex) {
           throw new RuntimeException("Exception in arrayBlockingQueue test", ex);
