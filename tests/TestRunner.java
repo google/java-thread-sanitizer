@@ -30,6 +30,7 @@ public class TestRunner {
   private final String VERBOSE_FLAG = "-verbose";
   private final String IGNORE_EXCLUDED_FLAG = "-all";
   private final String IGNORE_EXPECTED_RACE_FLAG = "-ignore_expected";
+  private final String HIGH_LEVEL_DATA_RACES_ONLY_FLAG = "-hldr";
   protected PrintWriter out;
 
   private String regexp;
@@ -38,7 +39,7 @@ public class TestRunner {
   private boolean ignoreExpectedRace;
   private boolean verbose;
   private ArrayList<Object> tests;
-  
+
   public static void main(String[] args) {
     TestRunner runner = new TestRunner();
     runner.parseArgs(args);
@@ -80,6 +81,10 @@ public class TestRunner {
       } else if (s.equals(IGNORE_EXPECTED_RACE_FLAG)) {
         ignoreExpectedRace = true;
         out.println("Ignore expected race");
+      } else if (s.equals(HIGH_LEVEL_DATA_RACES_ONLY_FLAG)) {
+        tests.clear();
+        tests.add(new HighLevelDataRaceTests());
+        out.println("High Level Data Races tests only");
       }
     }
   }
@@ -109,7 +114,7 @@ public class TestRunner {
         }
         ExcludedTest excludedTestAnnotation = method.getAnnotation(ExcludedTest.class);
         if (excludedTestAnnotation != null) {
-          excludedTests.add(new String[] {methodName, excludedTestAnnotation.reason()});
+          excludedTests.add(new String[]{methodName, excludedTestAnnotation.reason()});
           if (!ignoreExcluded) {
             continue;
           }
@@ -144,14 +149,15 @@ public class TestRunner {
         }
       }
     }
-    if (excludedTests.size() > 0) {
-      out.println(">>>> org.jtsan.TestRunner: Exclude list:");
-    }
-    for (String[] disableTest : excludedTests) {
-      out.printf("EXCL %-30sReason: %s\n", disableTest[0], disableTest[1]);
+    if (!ignoreExcluded) {
+      if (excludedTests.size() > 0) {
+        out.println(">>>> org.jtsan.TestRunner: Exclude list:");
+      }
+      for (String[] disableTest : excludedTests) {
+        out.printf("EXCL %-30sReason: %s\n", disableTest[0], disableTest[1]);
+      }
     }
     out.close();
   }
-
 
 }
