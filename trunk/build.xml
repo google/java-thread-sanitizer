@@ -43,7 +43,10 @@ limitations under the License.
 
   <target name="jar" depends="compile" description="create jars">
     <mkdir dir="dist"/>
-    <jar basedir="bin/agent" destfile="dist/agent.jar" manifest="manifest.mf"/>
+    <jar destfile="dist/agent.jar" manifest="manifest.mf">
+      <fileset dir="bin/agent"/>
+      <zipfileset src="deps/asm-3.2/lib/all/asm-all-3.2.jar"/>
+    </jar>
     <jar basedir="bin/tests" destfile="dist/tests.jar">
       <manifest>
         <attribute name="Main-Class" value="TestRunner"/>

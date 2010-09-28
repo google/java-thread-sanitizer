@@ -233,12 +233,15 @@ public class MethodTransformer extends AdviceAdapter {
       isStatic = false;
       isWrite = true;
     }
-    if (!"<init>".equals(methodName)) {
+    if (!"<init>".equals(methodName) && !"<clinit>".equals(methodName)) {
       // The method <init> may save values to fields of an uninitialized object.
       // We cannot pass an 'ininitialized this' to an interceptor without
       // causing a VerifyError. 'Uninitialized this' can be detected using
       // StackAnalyzer with precomputed stack frame info by ClassWriter. Skip
       // this process for simplicity.
+      //
+      // The method <clinit> may save values to static fields of a class,
+      // but JLS guarantees correctness. 
       if (isStatic) {
         visitStaticFieldAccess(owner + "." + name, isWrite);
       } else {

@@ -34,7 +34,6 @@ public class CustomTests {
     }
   }
 
-  @ExcludedTest(reason = "Jtsan does not report locks in <clinit>")
   @RaceTest(expectRace = false,
       description = "Static final variable init and access")
   public void staticFinal() {
