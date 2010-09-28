@@ -3,4 +3,3 @@ Premain-Class: org.jtsan.Agent
 Agent-Class: org.jtsan.Agent
 Can-Redefine-Classes: true
 Can-Retransform-Classes: true
-Boot-Class-Path: ../deps/asm-3.2/lib/all/asm-all-3.2.jar

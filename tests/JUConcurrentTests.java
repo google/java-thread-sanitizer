@@ -345,7 +345,6 @@ public class JUConcurrentTests {
     };
   }
 
-  @ExcludedTest(reason = "Jtsan does not report locks in <clinit>")
   @RaceTest(expectRace = false,
       description = "ReentrantReadWriteLock: tryLock")
   public void tryLock() {
