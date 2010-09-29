@@ -13,19 +13,23 @@
 * limitations under the License.
 */
 
+import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Class contains tests for jtsan. Tests cover java.util.concurrent functionality.
- *  
+ *
  * @author Konstantin Serebryany
  * @author Sergey Vorobyev
  */
@@ -393,7 +397,7 @@ public class JUConcurrentTests {
   }
 
   @RaceTest(expectRace = false,
-    description = "ReentrantLock: simple access")
+      description = "ReentrantLock: simple access")
   public void reentrantLockSimple() {
     final ReentrantLock lock = new ReentrantLock();
     new ThreadRunner(2) {
@@ -450,6 +454,69 @@ public class JUConcurrentTests {
 
       public void thread1() {
         i.incrementAndGet();
+      }
+
+      public void thread2() {
+        thread1();
+      }
+
+      public void thread3() {
+        thread1();
+      }
+
+      public void thread4() {
+        thread1();
+      }
+    };
+  }
+
+  // Example from http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/src/main/java/util/
+  // concurrent/locks/LockSupport.java?view=markup .
+  class FIFOMutex {
+    private final AtomicBoolean locked = new AtomicBoolean(false);
+    private final Queue<Thread> waiters
+        = new ConcurrentLinkedQueue<Thread>();
+
+    public void lock() {
+      boolean wasInterrupted = false;
+      Thread current = Thread.currentThread();
+      waiters.add(current);
+
+      // Block while not first in queue or cannot acquire lock.
+      while (waiters.peek() != current ||
+          !locked.compareAndSet(false, true)) {
+        LockSupport.park(this);
+        if (Thread.interrupted()) // ignore interrupts while waiting.
+          wasInterrupted = true;
+      }
+
+      waiters.remove();
+      if (wasInterrupted)          // reassert interrupt status on exit.
+        current.interrupt();
+    }
+
+    public void unlock() {
+      locked.set(false);
+      LockSupport.unpark(waiters.peek());
+    }
+  }
+
+  @RaceTest(expectRace = false,
+      description = "Use custom reentrant lock - FIFOMutex. " +
+          "Test LockSupport happens-before relations")
+  public void fifoMutexUser() {
+    new ThreadRunner(4) {
+      FIFOMutex mu;
+
+      public void setUp() {
+        mu = new FIFOMutex();
+      }
+
+      public void thread1() {
+        mu.lock();
+        shortSleep();
+        sharedVar++;
+        mu.unlock();
       }
 
       public void thread2() {

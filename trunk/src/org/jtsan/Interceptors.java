@@ -88,7 +88,7 @@ public class Interceptors {
                       "lockInterruptibly()V",
                       "juclLock_lockInterruptibly");
 
-    // java.util.concurrent.Condition
+    // java.util.concurrent.locks.Condition
     map.registerBefore("java/util/concurrent/locks/Condition", "await()V",
                        "juclCondition_awaitBefore");
     map.registerAfter("java/util/concurrent/locks/Condition", "await()V",
@@ -102,6 +102,22 @@ public class Interceptors {
     // awaitNanos(long)
     // awaitUninterruptibly()
     // awaitUntil(Date)
+
+    // java.util.concurrent.locks.LockSupport
+    map.registerAfter("java/util/concurrent/locks/LockSupport", "park()V",
+                      "juclLockSupport_park");
+    map.registerAfter("java/util/concurrent/locks/LockSupport", "park(Ljava/lang/Object;)V",
+                      "juclLockSupport_park2");
+    map.registerAfter("java/util/concurrent/locks/LockSupport", "parkNanos(J)V",
+                      "juclLockSupport_parkNanos");
+    map.registerAfter("java/util/concurrent/locks/LockSupport", "parkNanos(Ljava/lang/Object;J)V",
+                      "juclLockSupport_parkNanos2");
+    map.registerAfter("java/util/concurrent/locks/LockSupport", "parkUntil(J)V",
+                      "juclLockSupport_parkUntil");
+    map.registerAfter("java/util/concurrent/locks/LockSupport", "parkUntil(Ljava/lang/Object;J)V",
+                      "juclLockSupport_parkUntil2");
+    map.registerBefore("java/util/concurrent/locks/LockSupport", "unpark(Ljava/lang/Thread;)V",
+                      "juclLockSupport_unpark");
 
     // org.jtsan.RaceDetectorApi. Put exact matching to eliminate the cost of extra checks.
     map.registerBeforeExact("org/jtsan/RaceDetectorApi",
