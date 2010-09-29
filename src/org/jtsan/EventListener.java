@@ -346,4 +346,40 @@ public class EventListener {
     writer.writeEvent(EventType.SIGNAL, tid(), pc,
                       System.identityHashCode(conditionMap.get(condition)), 0);
   }
+
+  public static void juclLockSupport_park(long pc) {
+    writer.writeEvent(EventType.WAIT, tid(), pc,
+                      System.identityHashCode(Thread.currentThread()), 0);
+  }
+
+  public static void juclLockSupport_park2(Object blocker, long pc) {
+    writer.writeEvent(EventType.WAIT, tid(), pc,
+                      System.identityHashCode(Thread.currentThread()), 0);
+  }
+
+  public static void juclLockSupport_parkNanos(long nanos, long pc) {
+    writer.writeEvent(EventType.WAIT, tid(), pc,
+                      System.identityHashCode(Thread.currentThread()), 0);
+  }
+
+  public static void juclLockSupport_parkNanos2(Object blocker, long nanos, long pc) {
+    writer.writeEvent(EventType.WAIT, tid(), pc,
+                      System.identityHashCode(Thread.currentThread()), 0);
+  }
+
+  public static void juclLockSupport_parkUntil(long deadline, long pc) {
+    writer.writeEvent(EventType.WAIT, tid(), pc,
+                      System.identityHashCode(Thread.currentThread()), 0);
+  }
+
+  public static void juclLockSupport_parkUntil2(Object blocker, long deadline, long pc) {
+    writer.writeEvent(EventType.WAIT, tid(), pc,
+                      System.identityHashCode(Thread.currentThread()), 0);
+  }
+
+  public static void juclLockSupport_unpark(Thread thread, long pc) {
+    writer.writeEvent(EventType.SIGNAL, tid(), pc,
+                      System.identityHashCode(thread), 0);
+  }
+
 }

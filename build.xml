@@ -17,8 +17,12 @@ limitations under the License.
   <target name="all" depends="compile,jar"/>
 
   <property name="debug" value="true"/>
-  <property name="tsan-offline-path"
-            value="../../tsan/bin/amd64-linux-debug-ts_offline"/>
+  <!-- TODO(vors): Add ant test args to determine which tsan to use. -->
+  <condition property="tsan-offline-path"
+        value="../../tsan/bin/x86-darwin-debug-ts_offline"
+        else="../../tsan/bin/amd64-linux-debug-ts_offline">
+      <os family="mac"/>
+  </condition>
   <property name="log-dir" value="log"/>
   <property name="events-file" value="${log-dir}/events"/>
   <property name="tsan-log-file" value="${log-dir}/tsan.log"/>

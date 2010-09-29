@@ -20,13 +20,15 @@ public class CustomTests {
 
   static class staticFinalProvider {
     private static final int staticFinalX = hugeMethod();
+
     static int getStaticFinalX() {
       return staticFinalX;
     }
+
     static int hugeMethod() {
       int x = 1;
       int y = 1;
-      for (int i=0; i<1000000; i++) {
+      for (int i = 0; i < 1000000; i++) {
         x = x + y;
         y = x - y;
       }
@@ -41,12 +43,15 @@ public class CustomTests {
       public void thread1() {
         int z = staticFinalProvider.getStaticFinalX();
       }
+
       public void thread2() {
         thread1();
       }
+
       public void thread3() {
         thread1();
       }
+
       public void thread4() {
         thread1();
       }
@@ -61,6 +66,7 @@ public class CustomTests {
         sharedVar++;
         throw new RuntimeException("Exit from thread1 with this Exception");
       }
+
       public synchronized void thread2() {
         sharedVar++;
       }
