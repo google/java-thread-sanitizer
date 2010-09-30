@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -216,21 +217,29 @@ public class EventListener {
     writer.writeEvent(EventType.THR_JOIN_AFTER, parent_tid, pc, child_tid, 0);
   }
 
-  public static void jucCountDownLatch_countDown(CountDownLatch latch, long pc){
-    writer.writeEvent(EventType.SIGNAL, tid(), pc, System.identityHashCode(latch), 0);
+  // java.util.concurrent.locks.AbstractQueuedSynchronizer
+
+  public static void juclAQS_releaseShared(AbstractQueuedSynchronizer owner, int arg, long pc) {
+    writer.writeEvent(EventType.SIGNAL, tid(), pc, System.identityHashCode(owner), 0);
   }
 
-  public static void jucCountDownLatch_await(CountDownLatch latch, long pc){
-    writer.writeEvent(EventType.WAIT, tid(), pc, System.identityHashCode(latch), 0);
+  public static void juclAQS_acquireSharedInterruptibly(AbstractQueuedSynchronizer owner,
+                                                        int arg, long pc){
+    writer.writeEvent(EventType.WAIT, tid(), pc, System.identityHashCode(owner), 0);
   }
 
-  public static void jucSemaphore_release(Semaphore sem, long pc){
-    writer.writeEvent(EventType.SIGNAL, tid(), pc, System.identityHashCode(sem), 0);
+  public static void juclAQS_acquireShared(AbstractQueuedSynchronizer owner, int arg, long pc){
+    writer.writeEvent(EventType.WAIT, tid(), pc, System.identityHashCode(owner), 0);
   }
 
-  public static void jucSemaphore_acquire(Semaphore sem, long pc){
-    writer.writeEvent(EventType.WAIT, tid(), pc, System.identityHashCode(sem), 0);
+  public static void juclAQS_tryAcquireSharedNanos(AbstractQueuedSynchronizer owner,
+                                                   int arg, long nanos, boolean result, long pc) {
+    if (result) {
+      writer.writeEvent(EventType.WAIT, tid(), pc, System.identityHashCode(owner), 0);
+    }
   }
+    
+  // java.util.concurrent.locks.ReentrantReadWriteLock
 
   public static void jucRRWL_ReadLock_lock(ReentrantReadWriteLock.ReadLock lock, long pc){
     writer.writeEvent(EventType.READER_LOCK, tid(), pc,

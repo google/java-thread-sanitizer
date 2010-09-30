@@ -33,17 +33,26 @@ public class Interceptors {
     map.registerAfter("java/lang/Thread", "join()V", "jlThreadJoin");
     map.registerAfter("java/lang/Object", "wait()V", "jlObjectWaitAfter");
 
-    // java.util.concurrent.CountDownLatch
-    map.registerBefore("java/util/concurrent/CountDownLatch",
-                       "countDown()V", "jucCountDownLatch_countDown");
-    map.registerAfter("java/util/concurrent/CountDownLatch",
-                      "await()V", "jucCountDownLatch_await");
+    // java.util.concurrent.CountDownLatch is supported by AbstractQueuedSynchronizer:
+    // countDown()V is supported by releaseShared(...);
+    // await()V is supported by acquireSharedInterruptibly(...);
+    // await(JLjava/util/concurrent/TimeUnit;)Z is supported by tryAcquireSharedNanos(...).
 
-    // java.util.concurrent.Semaphore
-    map.registerBefore("java/util/concurrent/Semaphore",
-                       "release()V", "jucSemaphore_release");
-    map.registerAfter("java/util/concurrent/Semaphore",
-                      "acquire()V", "jucSemaphore_acquire");
+    // java.util.concurrent.Semaphore is supported by
+    // release()V is supported by releaseShared(...);
+    // acquire()V is supported by acquireSharedInterruptibly(...).
+    // TODO(vors): Check what other methods are supported
+    // by intercepting AbstractQueuedSynchronizer.
+
+    // java.util.concurrent.locks.AbstractQueuedSynchronizer
+    map.registerBefore("java/util/concurrent/locks/AbstractQueuedSynchronizer",
+                       "releaseShared(I)Z", "juclAQS_releaseShared");
+    map.registerAfter("java/util/concurrent/locks/AbstractQueuedSynchronizer",
+                      "acquireSharedInterruptibly(I)V", "juclAQS_acquireSharedInterruptibly");
+    map.registerAfter("java/util/concurrent/locks/AbstractQueuedSynchronizer",
+                      "acquireShared(I)V", "juclAQS_acquireShared");
+    map.registerAfter("java/util/concurrent/locks/AbstractQueuedSynchronizer",
+                      "tryAcquireSharedNanos(IJ)Z", "juclAQS_tryAcquireSharedNanos");
 
     // java.util.concurrent.locks.ReentrantReadWriteLock
     map.registerAfter("java/util/concurrent/locks/ReentrantReadWriteLock$ReadLock",
