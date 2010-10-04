@@ -73,4 +73,71 @@ public class CustomTests {
     };
   }
 
+  static class StaticCounter {
+    static int counter = 0;
+    static void sleep() {
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    static synchronized int inc() {
+      sleep();
+      int res = counter++;
+      sleep();
+      return res;
+    }
+    static int inc2() {
+      synchronized (StaticCounter.class) {
+        sleep();
+        int res = counter++;
+        sleep();
+        return res;
+      }
+    }
+  }
+
+  @ExcludedTest(reason = "We don't handle monitorEnter in static synchronized methods")
+  @RaceTest(expectRace = false,
+    description = "Synchronized increment from static context")
+  public void staticSync() {
+    new ThreadRunner(2) {
+      public void thread1() {
+        StaticCounter.inc();
+      }
+      public void thread2() {
+        thread1();
+      }
+    };
+  }
+
+  @RaceTest(expectRace = false,
+    description = "Synchronized increment from static context")
+  public void staticSync2() {
+    new ThreadRunner(2) {
+      public void thread1() {
+        StaticCounter.inc2();
+      }
+      public void thread2() {
+        thread1();
+      }
+    };
+  }
+
+  @RaceTest(expectRace = false,
+    description = "Synchronized increment from static context")
+  public void staticSync3() {
+    new ThreadRunner(2) {
+      public void thread1() {
+        StaticCounter.inc();
+      }
+      public void thread2() {
+        StaticCounter.inc2();
+      }
+    };
+  }
+
+
 }
