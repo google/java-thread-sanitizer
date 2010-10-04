@@ -126,6 +126,7 @@ public class CustomTests {
     };
   }
 
+  @ExcludedTest(reason = "We don't handle monitorEnter in static synchronized methods")  
   @RaceTest(expectRace = false,
     description = "Synchronized increment from static context")
   public void staticSync3() {
