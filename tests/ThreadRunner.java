@@ -27,6 +27,7 @@ public class ThreadRunner {
   protected Object sharedObject;
   protected final Object monitor;
   protected static volatile boolean staticVolatileBoolean;
+  protected static int staticSharedVar = 0;
 
   // Virtual functions. Override some of them in your test.
   public void thread1() {
