@@ -140,5 +140,49 @@ public class CustomTests {
     };
   }
 
+  // TODO(vors): Support tsan output verification.
+  @ExcludedTest(reason = "See tsan output for this test manually")
+  @RaceTest(description = "Check correctness of stack traces to confirm tsan report")
+  // Run tests.jar with -ignore_excluded and see race-report.
+  // Wrong report:
+  // WARNING: Possible data race during write of size 1 at 0xd2da2c6e: {{{
+  //   T144 (L{}):
+  //    #0  CustomTests$6.thread1 CustomTests.java:151
+  //    #1  ThreadRunner$1.run ThreadRunner.java:85
+  //    #2  ThreadRunner.<init> ThreadRunner.java:107
+  //  Concurrent write(s) happened at (OR AFTER) these points:
+  //   T145 (L{}):
+  //    #0  CustomTests$6.rec CustomTests.java:147
+  //    #1  CustomTests$6.rec CustomTests.java:148
+  //    #2  CustomTests$6.rec CustomTests.java:148
+  //    #3  CustomTests$6.rec CustomTests.java:148
+  //    #4  CustomTests$6.rec CustomTests.java:148
+  //    #5  CustomTests$6.rec CustomTests.java:148
+  //    #6  CustomTests$6.rec CustomTests.java:148
+  //    #7  CustomTests$6.rec CustomTests.java:148
+  //    #8  CustomTests$6.rec CustomTests.java:148
+  //    #9  CustomTests$6.rec CustomTests.java:148
+  //   Race verifier data: 0x1bca,0x1bc6
+  //}}}
+  //
+  public void recTest() {
+    new ThreadRunner(2) {
+      private int rec(int x) {
+        if (x == 0) return 1;
+        return x + rec(x-1);
+      }
+      public void thread1() {
+        int a = rec(10);
+        sharedVar = a;
+      }
+
+      public void thread2() {
+        int a = rec(11);
+        for (int i=0; i<10; i++)
+          shortSleep();
+        sharedVar = a;
+      }
+    };
+  }
 
 }
