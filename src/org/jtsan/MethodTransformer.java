@@ -354,6 +354,10 @@ public class MethodTransformer extends AdviceAdapter {
     callsGen.setBeforeTargets(methods.getTargetsFor(name + desc, MethodMapping.E_BEFORE_METHOD));
     callsGen.setAfterTargets(methods.getTargetsFor(name + desc, MethodMapping.E_AFTER_METHOD));
     callsGen.generateCall();
+
+    // Capture code position after the call.
+    push(genCodePosition());
+    visitListenerCall("afterCall", "(J)V");
   }
 
   public void superVisitMethodInsn(int opcode, String owner, String name, String desc) {

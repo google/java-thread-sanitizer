@@ -84,6 +84,10 @@ public class EventListener {
     writer.writeEvent(EventType.SBLOCK_ENTER, tid(), pc, 0, 0);
   }
 
+  public static void afterCall(long pc) {
+    writer.writeEvent(EventType.SBLOCK_ENTER, tid(), pc, 0, 0);
+  }
+
   public static void methodEnter(long pc) {
     writer.writeEvent(EventType.RTN_CALL, tid(), 0, 0, 0);
     writer.writeEvent(EventType.SBLOCK_ENTER, tid(), pc, 0, 0);
