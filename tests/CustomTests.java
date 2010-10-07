@@ -142,7 +142,7 @@ public class CustomTests {
 
   // TODO(vors): Support tsan output verification.
   @ExcludedTest(reason = "See tsan output for this test manually")
-  @RaceTest(description = "Check correctness of stack traces to confirm tsan report")
+  @RaceTest(description = "One should verify correctness of stack traces to confirm tsan report")
   // Run tests.jar with -ignore_excluded and see race-report.
   // Wrong report:
   // WARNING: Possible data race during write of size 1 at 0xd2da2c6e: {{{
