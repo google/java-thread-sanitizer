@@ -24,7 +24,7 @@ package org.jtsan;
 public class Interceptors {
 
   static void init(MethodMapping map) {
-    map.registerBefore("java/lang/System", "arraycopy(Ljava/lang/Object;ILjava/lang/Object;II)V",
+    map.registerAfter("java/lang/System", "arraycopy(Ljava/lang/Object;ILjava/lang/Object;II)V",
                        "jlSystemArrayCopy");
     map.registerBefore("java/lang/Object", "wait()V", "jlObjectWait");
     map.registerBefore("java/lang/Object", "notify()V", "jlObjectNotify");
