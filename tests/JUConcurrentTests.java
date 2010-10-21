@@ -16,9 +16,13 @@
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -532,5 +536,26 @@ public class JUConcurrentTests {
       }
     };
   }
+
+  @ExcludedTest(reason = "WARNING: Unlocking a non-locked lock occurred")
+  @RaceTest(expectRace = false,
+      description = "Test happens-before relations between FutureTask calculation and get")
+  public void futureTask() {
+    FutureTask<int[]> future = new FutureTask<int[]>(new Callable<int[]>() {
+      public int[] call() {
+        int[] res = new int[1];
+        res[0] = 42;
+        return res;
+      }
+    });
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+    executor.execute(future);
+    try {
+      int[] futureRes = future.get();
+      futureRes[0]++;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }   
 
 }
