@@ -537,7 +537,7 @@ public class JUConcurrentTests {
     };
   }
 
-  @ExcludedTest(reason = "WARNING: Unlocking a non-locked lock occurred")
+  @ExcludedTest(reason = "Occurred \"WARNING: Unlocking a non-locked lock\"")
   @RaceTest(expectRace = false,
       description = "Test happens-before relations between FutureTask calculation and get")
   public void futureTask() {

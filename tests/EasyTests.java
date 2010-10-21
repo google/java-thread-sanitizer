@@ -185,7 +185,6 @@ public class EasyTests {
   }
 
 
-
   @RaceTest(expectRace = true,
       description = "Two no locked writes to same object field")
   public void recursiveObjectWW() {
@@ -214,6 +213,94 @@ public class EasyTests {
     };
   }
 
+  @RaceTest(expectRace = true,
+      description = "Use racey System.arraycopy()")
+  public void systemArrayCopy() {
+    new ThreadRunner(2) {
+      int[] sharedArray;
+
+      public void setUp() {
+        sharedArray = new int[117];
+      }
+
+      public void thread1() {
+        System.arraycopy(new int[100], 0, sharedArray, 10, 100);
+      }
+
+      public void thread2() {
+        System.arraycopy(sharedArray, 0, new int[30], 0, 20);
+      }
+    };
+  }
+
+  @RaceTest(expectRace = true,
+      description = "Use racey System.arraycopy()")
+  public void systemArrayCopy2() {
+    new ThreadRunner(2) {
+      int[] sharedArray;
+
+      public void setUp() {
+        sharedArray = new int[117];
+      }
+
+      public void thread1() {
+        System.arraycopy(new int[100], 0, sharedArray, 10, 100);
+      }
+
+      public void thread2() {
+        int x = sharedArray[42];
+      }
+    };
+  }
+
+  @RaceTest(expectRace = true,
+      description = "Use racey System.arraycopy()")
+  public void systemArrayCopy3() {
+    new ThreadRunner(2) {
+      int[] sharedArray;
+
+      public void setUp() {
+        sharedArray = new int[117];
+      }
+
+      public void thread1() {
+        sharedArray[42] = 117;
+      }
+
+      public void thread2() {
+        System.arraycopy(sharedArray, 30, new int[30], 0, 20);
+      }
+    };
+  }
+
+  @ExcludedTest(reason = "We can not distinguish two types of ArrayStoreException in native code " +
+      "occurred in System.arraycopy")
+  @RaceTest(expectRace = true,
+      description = "Use racey System.arraycopy(). ArrayStoreException case 2 occurred " +
+          "in the middle of copy process")
+  public void systemArrayCopyException() {
+    new ThreadRunner(2) {
+      Object[] sharedArray;
+
+      public void setUp() {
+        sharedArray = new Object[117];
+      }
+
+      public void thread1() {
+        for (int i=0; i<10; i++) {
+          sharedArray[i] = Integer.valueOf(5);
+        }
+        for (int i=10; i<20; i++) {
+          sharedArray[i] = Double.valueOf(1.1);
+        }
+      }
+
+      public void thread2() {
+        shortSleep();
+        System.arraycopy(sharedArray, 0, new Integer[30], 0, 20);
+      }
+    };
+  }
 
   //------------------ Negative tests ---------------------
 
@@ -369,7 +456,7 @@ public class EasyTests {
       }
 
       public void thread2() {
-        while (!staticVolatileBoolean);
+        while (!staticVolatileBoolean) ;
         sharedVar = 2;
       }
     };
@@ -416,7 +503,7 @@ public class EasyTests {
     new ThreadRunner(4) {
       int a, b;
       Integer c, d;
-
+       
       public void setUp() {
         a = b = c = d = 117;
       }
@@ -477,6 +564,150 @@ public class EasyTests {
     } catch (InterruptedException e) {
       throw new RuntimeException("InterruptedException in joinWithoutStart() method ", e);
     }
+  }
+
+  @RaceTest(expectRace = false,
+      description = "Use System.arraycopy(). Different scopes.")
+  public void systemArrayCopyDiff() {
+    new ThreadRunner(2) {
+      int[] sharedArray;
+
+      public void setUp() {
+        sharedArray = new int[117];
+      }
+
+      public void thread1() {
+        System.arraycopy(new int[100], 0, sharedArray, 10, 100);
+      }
+
+      public void thread2() {
+        System.arraycopy(sharedArray, 0, new int[30], 0, 6);
+      }
+    };
+  }
+
+  @RaceTest(expectRace = false,
+      description = "Use racey System.arraycopy(). Synchronized on the array monitor.")
+  public void systemArrayCopySync() {
+    new ThreadRunner(2) {
+      int[] sharedArray;
+
+      public void setUp() {
+        sharedArray = new int[117];
+      }
+
+      public void thread1() {
+        synchronized (sharedArray) {
+          System.arraycopy(new int[100], 0, sharedArray, 10, 100);
+        }
+      }
+
+      public void thread2() {
+        synchronized (sharedArray) {
+          System.arraycopy(sharedArray, 0, new int[30], 0, 20);
+        }
+      }
+    };
+  }
+
+  @RaceTest(expectRace = false,
+      description = "Arraycopy while reading one of the written elements")
+  public void systemArrayCopyDiff2() {
+    new ThreadRunner(2) {
+      int[] sharedArray;
+
+      public void setUp() {
+        sharedArray = new int[117];
+      }
+
+      public void thread1() {
+        System.arraycopy(new int[100], 0, sharedArray, 10, 100);
+      }
+
+      public void thread2() {
+        int x = sharedArray[3];
+      }
+    };
+  }
+
+  @RaceTest(expectRace = false,
+      description = "Arraycopy while written one of the reading elements")
+  public void systemArrayCopyDiff3() {
+    new ThreadRunner(2) {
+      int[] sharedArray;
+
+      public void setUp() {
+        sharedArray = new int[117];
+      }
+
+      public void thread1() {
+        sharedArray[27] = 11;
+      }
+
+      public void thread2() {
+        System.arraycopy(sharedArray, 0, new int[30], 0, 20);
+      }
+    };
+  }
+
+  @RaceTest(expectRace = false,
+      description = "Use racey System.arraycopy(). IndexOutOfBoundException occurred")
+  public void systemArrayCopyIndexOutOfBoundsException() {
+    new ThreadRunner(2) {
+      int[] sharedArray;
+
+      public void setUp() {
+        sharedArray = new int[117];
+      }
+
+      public void thread1() {
+        sharedArray[27] = 11;
+      }
+
+      public void thread2() {
+        System.arraycopy(sharedArray, 0, new int[30], 0, 200);
+      }
+    };
+  }
+
+  @RaceTest(expectRace = false,
+      description = "Use racey System.arraycopy(). NullPointerException occurred")
+  public void systemArrayCopyNullPointerException() {
+    new ThreadRunner(2) {
+      int[] sharedArray;
+
+      public void setUp() {
+        sharedArray = new int[117];
+      }
+
+      public void thread1() {
+        sharedArray[27] = 11;
+      }
+
+      public void thread2() {
+        System.arraycopy(sharedArray, 0, null, 0, 20);
+      }
+    };
+  }
+
+  @RaceTest(expectRace = false,
+      description = "Use racey System.arraycopy(). ArrayStoreException case 1 occurred")
+  public void systemArrayCopyArrayStoreException() {
+    new ThreadRunner(2) {
+      int[] sharedArray;
+
+      public void setUp() {
+        sharedArray = new int[117];
+      }
+
+      public void thread1() {
+        sharedArray[27] = 11;
+      }
+
+      public void thread2() {
+        System.arraycopy(sharedArray, 0, new Object(), 0, 20);
+      }
+    };
   }
 
 }

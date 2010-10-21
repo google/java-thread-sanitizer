@@ -116,9 +116,8 @@ public class EventListener {
 
   public static void objectFieldAccess(Object obj, boolean isWrite,
       String fieldName, long pc, boolean isVolatile) {
-    // TODO: make uniqueId a 64 bit value: higher half to be object ID, lower
-    // half to be field ID.
-    int uniqueId = System.identityHashCode(obj) + System.identityHashCode(fieldName.intern());
+    long uniqueId = ((long)System.identityHashCode(obj) << 32L) +
+        (long) System.identityHashCode(fieldName.intern());
     reportFieldAccess(isWrite,
                       tid(),
                       pc,
@@ -130,6 +129,8 @@ public class EventListener {
       String fieldName, boolean isWrite, long pc, boolean isVolatile) {
     // Instead of taking 'unique' id of the class, take the id of the string representing it.
     // This is very dirty.
+    // TODO(vors): make uniqueId a 64 bit value: higher half to be class ID, lower
+    // half to be field ID.
     reportFieldAccess(isWrite,
                       tid(),
                       pc,
@@ -146,8 +147,7 @@ public class EventListener {
   }
 
   public static void arrayAccess(Object array, int index, boolean isWrite, long pc) {
-    // TODO(egor): improve uniqueness for 64bit offline detector.
-    int id = System.identityHashCode(array) + index;
+    long id = ((long)System.identityHashCode(array) << 32L) + (long)index;
     reportFieldAccess(isWrite,
                       tid(),
                       pc,
@@ -197,14 +197,24 @@ public class EventListener {
 
   public static void jlSystemArrayCopy(
       Object src, int srcPos, Object dest, int destPos, int length, long pc) {
-    /*
-    out.printf("System.arraycopy(src %d, srcPos %d, dest %d, destPos %d, length %d)\n",
-                      System.identityHashCode(src),
-                      srcPos,
-                      System.identityHashCode(dest),
-                      destPos,
-                      length);
-                      */
+    // TODO(vors): We handle NullPointerException, IndexOutOfBoundsException,
+    // ArrayStoreException case 1 (see javadoc), but don't handle
+    // ArrayStoreException case 2 (see javadoc), when part of values are stored and
+    // part are discarded (It's very tricky case).
+    for (int i = 0; i < length; i++) {
+      long srcId = ((long)System.identityHashCode(src) << 32L) + (long)(i + srcPos);
+            reportFieldAccess(false,   // isWrite
+                              tid(),
+                              pc,
+                              srcId,
+                              false); // isVolatile
+      long destId = ((long)System.identityHashCode(dest) << 32L) + (long)(i + destPos);
+            reportFieldAccess(true,   // isWrite
+                              tid(),
+                              pc,
+                              destId,
+                              false); // isVolatile
+    }
   }
 
   public static void jlThreadStart(Thread thr, long pc) {
