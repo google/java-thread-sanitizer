@@ -36,6 +36,7 @@ public class MethodTransformer extends AdviceAdapter {
   private final MethodMapping methods;
   private final String srcFile;
   private final String methodName;
+  private final String className;
   private final CodePos codePos;
   private final DescrCallback lazyDescr;
   private final Set<String> volatileFields;
@@ -52,14 +53,15 @@ public class MethodTransformer extends AdviceAdapter {
   private int line;
 
   public MethodTransformer(Agent agent, MethodVisitor mv,
-      int acc, String name, String fullName, String desc, String src, MethodMapping methods,
-      CodePos codePos, Set<String> volatileFields) {
+      int acc, String name, String fullName, String desc, String src, String className,
+      MethodMapping methods, CodePos codePos, Set<String> volatileFields) {
     super(mv, acc, name, desc);
     this.agent = agent;
     this.fullName = fullName;
     this.methods = methods;
     this.srcFile = src;
     this.methodName = name;
+    this.className = className;
     this.codePos = codePos;
     this.volatileFields = volatileFields;
     this.methodIsStatic = ((acc & Opcodes.ACC_STATIC) != 0);
@@ -94,8 +96,13 @@ public class MethodTransformer extends AdviceAdapter {
       push(codePos.incMethodEnterPC());
       captureMethodEnter();
     }
-    if ((methodAccess & Opcodes.ACC_SYNCHRONIZED) != 0 && !methodIsStatic) {
-      loadThis();
+    if ((methodAccess & Opcodes.ACC_SYNCHRONIZED) != 0) {
+      if (methodIsStatic) {
+        Type classType = Type.getType(className);
+        visitLdcInsn(classType);
+      } else {
+        loadThis();
+      }
       push(codePos.incMethodEnterPC());
       captureMonitorEnter();
     }
@@ -152,8 +159,13 @@ public class MethodTransformer extends AdviceAdapter {
   }
 
   private void onFinally() {
-    if ((methodAccess & Opcodes.ACC_SYNCHRONIZED) != 0 && !methodIsStatic) {
-      loadThis();
+    if ((methodAccess & Opcodes.ACC_SYNCHRONIZED) != 0) {
+      if (methodIsStatic) {
+        Type classType = Type.getType(className);
+        visitLdcInsn(classType);
+      } else {
+        loadThis();
+      }
       push(genCodePosition());
       captureMonitorExit();
     }

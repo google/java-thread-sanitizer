@@ -259,8 +259,8 @@ public class Agent implements ClassFileTransformer {
         CodeSizeLimiter csl = new CodeSizeLimiter(mv, name);
         LocalVariablesSorter sorter = new LocalVariablesSorter(access, desc, csl);
         MethodTransformer transformer = new MethodTransformer(
-            myself, sorter, access, name, fullMethodName, desc, fullSourcePath, syncMethods,
-            codePos, volatileFields);
+            myself, sorter, access, name, fullMethodName, desc, fullSourcePath, className,
+            syncMethods, codePos, volatileFields);
         transformer.setLocalVarsSorter(sorter);
         return transformer;
       }
