@@ -256,10 +256,11 @@ public class Agent implements ClassFileTransformer {
         int pos = className.lastIndexOf("/");
         String fullSourcePath = className.substring(0, pos + 1) + (source == null ? "" : source);
         String fullMethodName = className.substring(pos + 1) + "." + name + signatureStr;
+        String fullClassName = "L" + className + ";";
         CodeSizeLimiter csl = new CodeSizeLimiter(mv, name);
         LocalVariablesSorter sorter = new LocalVariablesSorter(access, desc, csl);
         MethodTransformer transformer = new MethodTransformer(
-            myself, sorter, access, name, fullMethodName, desc, fullSourcePath, className,
+            myself, sorter, access, name, fullMethodName, desc, fullSourcePath, fullClassName,
             syncMethods, codePos, volatileFields);
         transformer.setLocalVarsSorter(sorter);
         return transformer;
