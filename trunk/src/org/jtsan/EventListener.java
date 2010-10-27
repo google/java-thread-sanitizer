@@ -33,6 +33,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author Egor Pasko
  */
 public class EventListener {
+
+  private static final long MONITOR_C = 42L;
+
   private static EventWriter writer;
 
   // Typedef replacement.
@@ -139,19 +142,18 @@ public class EventListener {
   }
 
   public static void monitorEnter(Object obj, long pc) {
-    writer.writeEvent(EventType.WRITER_LOCK, tid(), pc, System.identityHashCode(obj), 0);
+    writer.writeEvent(EventType.WRITER_LOCK, tid(), pc, calcMonitorId(obj), 0);
   }
 
   public static void monitorExit(Object obj, long pc) {
-    writer.writeEvent(EventType.UNLOCK, tid(), pc, System.identityHashCode(obj), 0);
+    writer.writeEvent(EventType.UNLOCK, tid(), pc, calcMonitorId(obj), 0);
   }
 
   public static void arrayAccess(Object array, int index, boolean isWrite, long pc) {
-    long id = ((long)System.identityHashCode(array) << 32L) + (long)index;
     reportFieldAccess(isWrite,
                       tid(),
                       pc,
-                      id,
+                      calcArrayId(array, index),
                       false); // isVolatile
   }
 
@@ -179,20 +181,20 @@ public class EventListener {
   // Interceptors hooks.
 
   public static void jlObjectWait(Object obj, long pc) {
-    writer.writeEvent(EventType.UNLOCK, tid(), pc, System.identityHashCode(obj), 0);
+    writer.writeEvent(EventType.UNLOCK, tid(), pc, calcMonitorId(obj), 0);
   }
 
   public static void jlObjectWaitAfter(Object obj, long pc) {
-    writer.writeEvent(EventType.WAIT, tid(), pc, System.identityHashCode(obj), 0);
-    writer.writeEvent(EventType.WRITER_LOCK, tid(), pc, System.identityHashCode(obj), 0);
+    writer.writeEvent(EventType.WAIT, tid(), pc, calcMonitorId(obj), 0);
+    writer.writeEvent(EventType.WRITER_LOCK, tid(), pc, calcMonitorId(obj), 0);
   }
 
   public static void jlObjectNotify(Object obj, long pc) {
-    writer.writeEvent(EventType.SIGNAL, tid(), pc, System.identityHashCode(obj), 0);
+    writer.writeEvent(EventType.SIGNAL, tid(), pc, calcMonitorId(obj), 0);
   }
 
   public static void jlObjectNotifyAll(Object obj, long pc) {
-    writer.writeEvent(EventType.SIGNAL, tid(), pc, System.identityHashCode(obj), 0);
+    writer.writeEvent(EventType.SIGNAL, tid(), pc, calcMonitorId(obj), 0);
   }
 
   public static void jlSystemArrayCopy(
@@ -403,6 +405,17 @@ public class EventListener {
   public static void juclLockSupport_unpark(Thread thread, long pc) {
     writer.writeEvent(EventType.SIGNAL, tid(), pc,
                       System.identityHashCode(thread), 0);
+  }
+  
+  // Private methods.
+
+  private static long calcMonitorId(Object obj) {
+    // Use low 32bit for object hash and high 32bit for the magic constant.
+    return (MONITOR_C << 32L) + (long)System.identityHashCode(obj);
+  }
+
+  private static long calcArrayId(Object array, int index) {
+    return ((long)System.identityHashCode(array) << 32L) + (long)index;
   }
 
 }
