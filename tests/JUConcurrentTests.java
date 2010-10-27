@@ -556,6 +556,26 @@ public class JUConcurrentTests {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
-  }   
+  }
+
+  @RaceTest(expectRace = true,
+      description = "Test separate monitor and lock instances of Lock")
+  public void lockNeMonitor() {
+    final ReentrantLock lock = new ReentrantLock();
+    new ThreadRunner(2) {
+      public void thread1() {
+        lock.lock();
+        sharedVar++;
+        lock.unlock();
+      }
+
+      public void thread2() {
+        longSleep();
+        synchronized(lock) {
+          sharedVar++;
+        }
+      }
+    };
+  }
 
 }
