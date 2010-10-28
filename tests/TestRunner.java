@@ -26,11 +26,11 @@ import java.util.regex.Pattern;
  */
 public class TestRunner {
 
-  private final String REGEXP_PREFIX = "-test_filter=";
-  private final String VERBOSE_FLAG = "-verbose";
-  private final String IGNORE_EXCLUDED_FLAG = "-all";
-  private final String IGNORE_EXPECTED_RACE_FLAG = "-ignore_expected";
-  private final String HIGH_LEVEL_DATA_RACES_ONLY_FLAG = "-hldr";
+  private final String REGEXP_PREFIX = "test_filter=";
+  private final String VERBOSE_FLAG = "verbose";
+  private final String IGNORE_EXCLUDED_FLAG = "all";
+  private final String IGNORE_EXPECTED_RACE_FLAG = "ignore_expected";
+  private final String HIGH_LEVEL_DATA_RACES_ONLY_FLAG = "hldr";
   protected PrintWriter out;
 
   private String regexp;
@@ -62,29 +62,31 @@ public class TestRunner {
   }
 
   public void parseArgs(String[] args) {
-    for (String s : args) {
-      if (s.startsWith(REGEXP_PREFIX)) {
-        if (s.charAt(REGEXP_PREFIX.length()) == '-') {
-          regexp = s.substring(REGEXP_PREFIX.length() + 1);
-          positiveRegexp = false;
-          out.println("test negative filter regexp = " + regexp);
-        } else {
-          regexp = s.substring(REGEXP_PREFIX.length());
-          out.println("test filter regexp = " + regexp);
+    for (String s0 : args) {
+      for (String s : s0.split(":")) {
+        if (s.startsWith(REGEXP_PREFIX)) {
+          if (s.charAt(REGEXP_PREFIX.length()) == '-') {
+            regexp = s.substring(REGEXP_PREFIX.length() + 1);
+            positiveRegexp = false;
+            out.println("test negative filter regexp = " + regexp);
+          } else {
+            regexp = s.substring(REGEXP_PREFIX.length());
+            out.println("test filter regexp = " + regexp);
+          }
+        } else if (s.equals(VERBOSE_FLAG)) {
+          verbose = true;
+          out.println("verbose");
+        } else if (s.equals(IGNORE_EXCLUDED_FLAG)) {
+          ignoreExcluded = true;
+          out.println("Ignore @ExcludedTest");
+        } else if (s.equals(IGNORE_EXPECTED_RACE_FLAG)) {
+          ignoreExpectedRace = true;
+          out.println("Ignore expected race");
+        } else if (s.equals(HIGH_LEVEL_DATA_RACES_ONLY_FLAG)) {
+          tests.clear();
+          tests.add(new HighLevelDataRaceTests());
+          out.println("High Level Data Races tests only");
         }
-      } else if (s.equals(VERBOSE_FLAG)) {
-        verbose = true;
-        out.println("verbose");
-      } else if (s.equals(IGNORE_EXCLUDED_FLAG)) {
-        ignoreExcluded = true;
-        out.println("Ignore @ExcludedTest");
-      } else if (s.equals(IGNORE_EXPECTED_RACE_FLAG)) {
-        ignoreExpectedRace = true;
-        out.println("Ignore expected race");
-      } else if (s.equals(HIGH_LEVEL_DATA_RACES_ONLY_FLAG)) {
-        tests.clear();
-        tests.add(new HighLevelDataRaceTests());
-        out.println("High Level Data Races tests only");
       }
     }
   }

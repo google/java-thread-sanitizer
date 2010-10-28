@@ -13,45 +13,71 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-<project name="Java Race Detector" default="all">
-  <target name="all" depends="compile,jar"/>
+<project name="Java Race Detector" default="build">
+  <target name="usage" description="print usage message">
+<echo>
+USAGE:
+ant download
+ant build
+ant test
+
+'ant test' supports define-flags: -D{name}={value}
+tsan_path
+agent_args
+test_args
+
+Sample:
+ant test -Dtests_args=test_filter=staticSync:all:ignore_expected
+</echo>
+  </target>
+
+  <target name="build" depends="compile,jar" description="build agent.jar and tests.jar"/>
 
   <property name="debug" value="true"/>
-  <!-- TODO(vors): Add ant test args to determine which tsan to use. -->
-  <condition property="tsan-offline-path"
-        value="../../tsan/bin/amd64-darwin-debug-ts_offline"
-        else="../../tsan/bin/amd64-linux-debug-ts_offline">
-      <os family="mac"/>
+  <condition property="tsan_path"
+      value="../../tsan/bin/amd64-darwin-debug-ts_offline"
+      else="../../tsan/bin/amd64-linux-debug-ts_offline">
+    <os family="mac"/>
   </condition>
+  <property name="bin-dir" value="bin"/>
+  <property name="dist-dir" value="dist"/>
+  <property name="deps-dir" value="deps"/>
   <property name="log-dir" value="log"/>
   <property name="events-file" value="${log-dir}/events"/>
   <property name="tsan-log-file" value="${log-dir}/tsan.log"/>
   <property name="java-log-file" value="${log-dir}/java.log"/>
+  <property name="agent-path" value="${dist-dir}/agent.jar"/>
+  <property name="tests-jar-path" value="${dist-dir}/tests.jar"/>
+  <condition property="agent-args"
+      value="${agent_args}:logfile=${events-file}"
+      else="logfile=${events-file}">
+    <isset property="agent_args"/>
+  </condition>
+  <property name="tests_args" value=""/>
 
-  <target name="compile" description="compile classes"
-          depends="EventType.java">
-    <mkdir dir="bin/agent"/>
-    <javac srcdir="src" destdir="bin/agent" debug="${debug}">
+  <target name="compile" depends="EventType.java">
+    <mkdir dir="${bin-dir}/agent"/>
+    <javac srcdir="src" destdir="${bin-dir}/agent" debug="${debug}">
       <classpath>
-        <pathelement path="deps/asm-3.2/lib/all/asm-all-3.2.jar"/>
+        <pathelement path="${deps-dir}/asm-3.2/lib/all/asm-all-3.2.jar"/>
       </classpath>
       <compilerarg value="-Xlint"/>
     </javac>
-    <mkdir dir="bin/tests"/>
-    <javac srcdir="tests" destdir="bin/tests" debug="${debug}">
+    <mkdir dir="${bin-dir}/tests"/>
+    <javac srcdir="tests" destdir="${bin-dir}/tests" debug="${debug}">
       <classpath>
-        <pathelement path="bin/agent"/>
+        <pathelement path="${bin-dir}/agent"/>
       </classpath>
     </javac>
   </target>
 
-  <target name="jar" depends="compile" description="create jars">
-    <mkdir dir="dist"/>
-    <jar destfile="dist/agent.jar" manifest="manifest.mf">
-      <fileset dir="bin/agent"/>
-      <zipfileset src="deps/asm-3.2/lib/all/asm-all-3.2.jar"/>
+  <target name="jar" depends="compile">
+    <mkdir dir="${dist-dir}"/>
+    <jar destfile="${agent-path}" manifest="manifest.mf">
+      <fileset dir="${bin-dir}/agent"/>
+      <zipfileset src="${deps-dir}/asm-3.2/lib/all/asm-all-3.2.jar"/>
     </jar>
-    <jar basedir="bin/tests" destfile="dist/tests.jar">
+    <jar basedir="${bin-dir}/tests" destfile="${tests-jar-path}">
       <manifest>
         <attribute name="Main-Class" value="TestRunner"/>
       </manifest>
@@ -73,17 +99,23 @@ limitations under the License.
 
   <target name="test" description="run tests under tsan">
     <mkdir dir="${log-dir}"/>
-    <echo>tsan offline path = ${tsan-offline-path}</echo>
-    <java fork="true" jar="dist/tests.jar" output="${java-log-file}">
-      <jvmarg value="-Xbootclasspath/p:dist/agent.jar"/>
-      <jvmarg value="-javaagent:dist/agent.jar=logfile=log/events"/>
+    <echo>tsan_path = ${tsan_path}</echo>
+    <echo>agent_args = ${agent-args}</echo>
+    <echo>tests_args = ${tests_args}</echo>
+    <echo>running tests under agent</echo>
+    <java fork="true" jar="${tests-jar-path}" output="${java-log-file}">
+      <jvmarg value="-Xbootclasspath/p:${agent-path}"/>
+      <jvmarg value="-javaagent:${agent-path}=${agent-args}"/>
+      <arg value="${tests_args}"/>
     </java>
-    <exec executable="${tsan-offline-path}"
+    <echo>running tsan-offline</echo>
+    <exec executable="${tsan_path}"
           input="${events-file}"
           output="${tsan-log-file}"
           resultproperty="exitcode">
       <arg value="--error_exitcode=1"/>
     </exec>
+    <echo>summarizing results</echo>
     <exec executable="python" input="summarize.py">
       <arg value="-"/>
       <arg value="${log-dir}"/>
@@ -93,12 +125,12 @@ limitations under the License.
     </condition>
   </target>
 
-  <target name="download">
-    <mkdir dir="deps"/>
+  <target name="download" description="download dependences from the internet">
+    <mkdir dir="${deps-dir}"/>
     <get verbose="true" usetimestamp="true"
          src="http://download.forge.objectweb.org/asm/asm-3.2-bin.zip"
-         dest="deps/asm-3.2-bin.zip"/>
-    <checksum file="deps/asm-3.2-bin.zip" property="asmMD5"/>
+         dest="${deps-dir}/asm-3.2-bin.zip"/>
+    <checksum file="${deps-dir}/asm-3.2-bin.zip" property="asmMD5"/>
     <condition property="asmMD5ok" value="true">
       <equals arg1="${asmMD5}" arg2="ad95824b9aedfa5b59b096b01f5c5921"/>
     </condition>
@@ -106,15 +138,15 @@ limitations under the License.
 File deps/asm-3.2-bin.zip has incorrect md5sum.
     </fail>
     <echo>Checksum verified.</echo>
-    <delete dir="deps/asm-3.2"/>
-    <unzip src="deps/asm-3.2-bin.zip" dest="deps"/>
+    <delete dir="${deps-dir}/asm-3.2"/>
+    <unzip src="${deps-dir}/asm-3.2-bin.zip" dest="${deps-dir}"/>
     <get verbose="true" usetimestamp="true"
          src="https://data-race-test.googlecode.com/svn/trunk/tsan/ts_events.h"
-         dest="deps/ts_events.h"/>
+         dest="${deps-dir}/ts_events.h"/>
   </target>
 
   <property name="EventType.java" value="src/org/jtsan/EventType.java"/>
-  <property name="ts_events.h" value="deps/ts_events.h"/>
+  <property name="ts_events.h" value="${deps-dir}/ts_events.h"/>
   <condition property="EventType.java.notRequired">
     <and>
       <available file="${ts_events.h}"/>
@@ -134,14 +166,14 @@ ant build script\.\5package ${jtsan-package};\5public enum\2}"/>
     </replaceregexp>
   </target>
 
-  <target name="clean">
-    <delete dir="dist"/>
-    <delete dir="bin"/>
+  <target name="clean" description="clean up after builds">
+    <delete dir="${dist-dir}"/>
+    <delete dir="${bin-dir}"/>
     <delete dir="${log-dir}"/>
     <delete file="${EventType.java}"/>
   </target>
 
-  <target name="deps-clean">
-    <delete dir="deps"/>
+  <target name="clean-deps" description="clean up after downloads">
+    <delete dir="${deps-dir}"/>
   </target>
 </project>
