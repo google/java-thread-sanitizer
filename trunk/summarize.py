@@ -60,6 +60,9 @@ for test in tests:
       res = "FAIL"
       failed += 1
     print "%s %s" % (res, test)
+  else:
+    print "TSAN didn't handle test %s" % (test)
+    sys.exit(1)
 print disable_str
 print "----"
 print "passed: %d, failed: %d, excluded: %d, total: %d" % \
