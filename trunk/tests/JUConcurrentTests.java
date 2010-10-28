@@ -556,6 +556,7 @@ public class JUConcurrentTests {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+    executor.shutdown();
   }
 
   @RaceTest(expectRace = true,
