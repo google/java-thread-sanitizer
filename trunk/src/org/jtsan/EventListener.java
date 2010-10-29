@@ -17,6 +17,7 @@ package org.jtsan;
 
 import org.jtsan.writers.EventWriter;
 
+import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
@@ -313,6 +314,8 @@ public class EventListener {
                       System.identityHashCode(writeLockMap.get(lock)), 0);
   }
 
+  // java.util.concurrent.locks.Lock
+
   public static void jucRL_lock(ReentrantLock lock, long pc){
     writer.writeEvent(EventType.WRITER_LOCK, tid(), pc, System.identityHashCode(lock), 0);
   }
@@ -334,6 +337,12 @@ public class EventListener {
     writer.writeEvent(EventType.UNLOCK, tid(), pc, System.identityHashCode(lock), 0);
   }
 
+  public static void juclLock_lockInterruptibly(Lock lock, long pc) {
+    writer.writeEvent(EventType.WRITER_LOCK, tid(), pc, System.identityHashCode(lock), 0);
+  }
+
+  // java.util.concurrent.locks.ReadLock & java.util.concurrent.locks.WriteLock
+
   public static void juclReadLockConstructor(ReentrantReadWriteLock.ReadLock readLock,
       ReentrantReadWriteLock outerLock, long pc) {
     readLockMap.put(readLock, outerLock);
@@ -343,6 +352,9 @@ public class EventListener {
       ReentrantReadWriteLock outerLock, long pc) {
     writeLockMap.put(writeLock, outerLock);
   }
+
+  // java.util.concurrent.Condition
+
   public static void juclCondition_awaitBefore(Condition condition, long pc) {
     writer.writeEvent(EventType.UNLOCK, tid(), pc,
                       System.identityHashCode(conditionMap.get(condition)), 0);
@@ -354,12 +366,58 @@ public class EventListener {
     writer.writeEvent(EventType.WAIT, tid(), pc, System.identityHashCode(lock), 0);
   }
 
-  public static void juclLock_newCondition(Lock lock, Condition condition, long pc) {
-    conditionMap.put(condition, lock);
+  public static void juclCondition_await2Before(Condition condition, long time,
+                                                TimeUnit unit, boolean returned, long pc) {
+    writer.writeEvent(EventType.UNLOCK, tid(), pc,
+                      System.identityHashCode(conditionMap.get(condition)), 0);
   }
 
-  public static void juclLock_lockInterruptibly(Lock lock, long pc) {
+  public static void juclCondition_await2After(Condition condition, long time,
+                                                TimeUnit unit, boolean returned, long pc) {
+    Lock lock = conditionMap.get(condition);
     writer.writeEvent(EventType.WRITER_LOCK, tid(), pc, System.identityHashCode(lock), 0);
+    writer.writeEvent(EventType.WAIT, tid(), pc, System.identityHashCode(lock), 0);
+  }
+
+  public static void juclCondition_awaitNanosBefore(Condition condition,
+                                                    long nanosTimeout, long nanos, long pc) {
+    writer.writeEvent(EventType.UNLOCK, tid(), pc,
+                      System.identityHashCode(conditionMap.get(condition)), 0);
+  }
+
+  public static void juclCondition_awaitNanosAfter(Condition condition,
+                                                   long nanosTimeout, long nanos, long pc) {
+    Lock lock = conditionMap.get(condition);
+    writer.writeEvent(EventType.WRITER_LOCK, tid(), pc, System.identityHashCode(lock), 0);
+    writer.writeEvent(EventType.WAIT, tid(), pc, System.identityHashCode(lock), 0);
+  }
+
+  public static void juclCondition_awaitUninterruptiblyBefore(Condition condition, long pc) {
+    writer.writeEvent(EventType.UNLOCK, tid(), pc,
+                      System.identityHashCode(conditionMap.get(condition)), 0);
+  }
+
+  public static void juclCondition_awaitUninterruptiblyAfter(Condition condition, long pc) {
+    Lock lock = conditionMap.get(condition);
+    writer.writeEvent(EventType.WRITER_LOCK, tid(), pc, System.identityHashCode(lock), 0);
+    writer.writeEvent(EventType.WAIT, tid(), pc, System.identityHashCode(lock), 0);
+  }
+
+  public static void juclCondition_awaitUntilBefore(Condition condition,
+                                                    Date deadline, boolean returner, long pc) {
+    writer.writeEvent(EventType.UNLOCK, tid(), pc,
+                      System.identityHashCode(conditionMap.get(condition)), 0);
+  }
+
+  public static void juclCondition_awaitUntilAfter(Condition condition,
+                                                   Date deadline, boolean returner, long pc) {
+    Lock lock = conditionMap.get(condition);
+    writer.writeEvent(EventType.WRITER_LOCK, tid(), pc, System.identityHashCode(lock), 0);
+    writer.writeEvent(EventType.WAIT, tid(), pc, System.identityHashCode(lock), 0);
+  }
+
+  public static void juclLock_newCondition(Lock lock, Condition condition, long pc) {
+    conditionMap.put(condition, lock);
   }
 
   public static void juclCondition_signalAll(Condition condition, long pc) {
@@ -371,6 +429,8 @@ public class EventListener {
     writer.writeEvent(EventType.SIGNAL, tid(), pc,
                       System.identityHashCode(conditionMap.get(condition)), 0);
   }
+
+  // java.util.concurrent.locks.LockSupport
 
   public static void juclLockSupport_park(long pc) {
     writer.writeEvent(EventType.WAIT, tid(), pc,
