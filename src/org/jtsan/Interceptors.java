@@ -102,15 +102,35 @@ public class Interceptors {
                        "juclCondition_awaitBefore");
     map.registerAfter("java/util/concurrent/locks/Condition", "await()V",
                       "juclCondition_awaitAfter");
+
+    map.registerBefore("java/util/concurrent/locks/Condition", "awaitNanos(J)J",
+                       "juclCondition_awaitNanosBefore");
+    map.registerAfter("java/util/concurrent/locks/Condition", "awaitNanos(J)J",
+                      "juclCondition_awaitNanosAfter");
+
+    map.registerBefore("java/util/concurrent/locks/Condition",
+                       "await(JLjava/util/concurrent/TimeUnit;)Z",
+                       "juclCondition_await2Before");
+    map.registerAfter("java/util/concurrent/locks/Condition",
+                      "await(JLjava/util/concurrent/TimeUnit;)Z",
+                      "juclCondition_await2After");
+
+    map.registerBefore("java/util/concurrent/locks/Condition", "awaitUninterruptibly()V",
+                       "juclCondition_awaitUninterruptiblyBefore");
+    map.registerAfter("java/util/concurrent/locks/Condition", "awaitUninterruptibly()V",
+                      "juclCondition_awaitUninterruptiblyAfter");
+
+    map.registerBefore("java/util/concurrent/locks/Condition",
+                       "awaitUntil(Ljava/util/Date;)Z",                                              
+                       "juclCondition_awaitUntilBefore");
+    map.registerAfter("java/util/concurrent/locks/Condition",
+                      "awaitUntil(Ljava/util/Date;)Z",
+                      "juclCondition_awaitUntilAfter");
+
     map.registerBefore("java/util/concurrent/locks/Condition", "signalAll()V",
                        "juclCondition_signalAll");
     map.registerBefore("java/util/concurrent/locks/Condition", "signal()V",
                        "juclCondition_signal");
-    // TODO(vors): add other await methods:
-    // await(long, TimeUnit)
-    // awaitNanos(long)
-    // awaitUninterruptibly()
-    // awaitUntil(Date)
 
     // java.util.concurrent.locks.LockSupport
     map.registerAfter("java/util/concurrent/locks/LockSupport", "park()V",

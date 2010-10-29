@@ -390,5 +390,23 @@ public class MediumTests {
     };
   }
 
+  @RaceTest(expectRace = false,
+      description = "Test correctness of monitor exit with Exception")
+  public void exceptionWithSync() {
+    new ThreadRunner(2) {
+      public synchronized void thread1() {
+        sharedVar++;
+        throw new RuntimeException("Exit from synchronized method with this Exception");
+      }
+
+      public void thread2() {
+        shortSleep();
+        synchronized(this) {
+          sharedVar++;
+        }
+      }
+    };
+  }
+
 
 }
