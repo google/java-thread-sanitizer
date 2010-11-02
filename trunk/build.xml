@@ -57,14 +57,16 @@ ant test -Dtests_args=test_filter=staticSync:all:ignore_expected
 
   <target name="compile" depends="EventType.java">
     <mkdir dir="${bin-dir}/agent"/>
-    <javac srcdir="src" destdir="${bin-dir}/agent" debug="${debug}">
+    <javac srcdir="src" destdir="${bin-dir}/agent" debug="${debug}"
+      includeantruntime="false">
       <classpath>
         <pathelement path="${deps-dir}/asm-3.2/lib/all/asm-all-3.2.jar"/>
       </classpath>
       <compilerarg value="-Xlint"/>
     </javac>
     <mkdir dir="${bin-dir}/tests"/>
-    <javac srcdir="tests" destdir="${bin-dir}/tests" debug="${debug}">
+    <javac srcdir="tests" destdir="${bin-dir}/tests" debug="${debug}"
+      includeantruntime="false">
       <classpath>
         <pathelement path="${bin-dir}/agent"/>
       </classpath>
