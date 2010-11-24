@@ -21,6 +21,27 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class HighLevelDataRaceTests {
 
+  @RaceTest(description = "The simplest atomicity violation. Store sharedVar at local var." +
+      " All accesses to sharedVar are synchronized.")
+  public void localCopy() {
+    new ThreadRunner(2) {
+      public void thread1() {
+        int local;
+        synchronized(this) {
+          local = sharedVar;
+        }
+        local++;
+        synchronized(this) {
+          sharedVar = local;
+        }
+      }
+      public void thread2() {
+        thread1();
+      }
+    };
+  }
+
+
   @RaceTest(description = "Stale-value error from paper \"Finding stale-value errors " +
       "in concurrent programs\" by M.Burrows and K.R.M.Leino")
   public void badCyclicQueue() {
