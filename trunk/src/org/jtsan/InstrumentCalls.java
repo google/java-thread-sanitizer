@@ -71,8 +71,8 @@ public class InstrumentCalls {
   }
 
   public void generateCall() {
-    // Test staticExceptionCorrectness fail by two reasons:
-    // 1. There is no proper class test prior to interceptor call
+    // Test staticExceptionCorrectness fails by two reasons:
+    // 1. There is no proper class test prior to interceptor call for static method
     // 2. The signature of the interceptor is incorrect
     // TODO(vors): Fix instrumentation of static methods.
 
