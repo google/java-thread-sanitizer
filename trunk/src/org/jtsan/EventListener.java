@@ -30,6 +30,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Performs actions on intercepted events.
+ * Handlers signature:
+ *  - for reqistered before:
+ *    [invokedObject, methodParams ..., pc]
+ *  - for registered after:
+ *    [invokedObject, methodParams, returnValue, pc]
+ *  - for exceptions:
+ *    [invokedObject, throwable, pc]
+ *    TODO(vors): add params to exception handlers
  *
  * @author Egor Pasko
  */
@@ -430,6 +438,14 @@ public class EventListener {
                       System.identityHashCode(conditionMap.get(condition)), 0);
   }
 
+  public static void juclCondition_awaitException(Condition c, Throwable e, long pc) {
+    if (e instanceof InterruptedException) {
+      Lock lock = conditionMap.get(c);
+      writer.writeEvent(EventType.WRITER_LOCK, tid(), pc, System.identityHashCode(lock), 0);
+      writer.writeEvent(EventType.WAIT, tid(), pc, System.identityHashCode(lock), 0);
+    }
+  }
+
   // java.util.concurrent.locks.LockSupport
 
   public static void juclLockSupport_park(long pc) {
@@ -476,6 +492,10 @@ public class EventListener {
 
   private static long calcArrayId(Object array, int index) {
     return ((long)System.identityHashCode(array) << 32L) + (long)index;
+  }
+
+  public static void popAndPrint(Object o) {
+    System.out.println("POP AND PRINT: " + o);
   }
 
 }

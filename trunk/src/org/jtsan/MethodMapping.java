@@ -31,6 +31,7 @@ public class MethodMapping {
   public static final int E_NONE = 0;
   public static final int E_BEFORE_METHOD = 1;
   public static final int E_AFTER_METHOD = 2;
+  public static final int E_EXCEPTION = 3;
 
   private final ConcurrentMap<EventInfo, LinkedList<HandlerInfo>> map =
       new ConcurrentHashMap<EventInfo, LinkedList<HandlerInfo>>(10);
@@ -125,6 +126,10 @@ public class MethodMapping {
 
   public void registerAfterExact(String className, String methodName, String eventMethod) {
     registerEvent(className, methodName, E_AFTER_METHOD, eventMethod, true /* exact */);
+  }
+
+  public void registerException(String className, String methodName, String eventMethod) {
+    registerEvent(className, methodName, E_EXCEPTION, eventMethod, false /* exact */);
   }
 
   public List<HandlerInfo> getTargetsFor(String name, int eventType) {

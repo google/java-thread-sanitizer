@@ -102,6 +102,8 @@ public class Interceptors {
                        "juclCondition_awaitBefore");
     map.registerAfter("java/util/concurrent/locks/Condition", "await()V",
                       "juclCondition_awaitAfter");
+    map.registerException("java/util/concurrent/locks/Condition", "await()V",
+                          "juclCondition_awaitException");
 
     map.registerBefore("java/util/concurrent/locks/Condition", "awaitNanos(J)J",
                        "juclCondition_awaitNanosBefore");
