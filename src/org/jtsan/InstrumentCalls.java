@@ -45,7 +45,9 @@ public class InstrumentCalls {
 
   private List<MethodMapping.HandlerInfo> beforeTargets;
   private List<MethodMapping.HandlerInfo> afterTargets;
+  private List<MethodMapping.HandlerInfo> exceptionTargets;
   private LocalVarsSaver saver;
+  private LocalVarsSaver saverThis;
 
   public InstrumentCalls(MethodTransformer.GenerationCallback cb,
       GeneratorAdapter gen, int opcode, String owner, String desc) {
@@ -56,15 +58,24 @@ public class InstrumentCalls {
     this.desc = desc;
   }
 
-  public void setBeforeTargets(List<MethodMapping.HandlerInfo> targets) {
-    beforeTargets = targets;
+  public void setBeforeTargets(List<MethodMapping.HandlerInfo> beforeTargets) {
+    this.beforeTargets = beforeTargets;
   }
 
-  public void setAfterTargets(List<MethodMapping.HandlerInfo> targets) {
-    afterTargets = targets;
+  public void setAfterTargets(List<MethodMapping.HandlerInfo> afterTargets) {
+    this.afterTargets = afterTargets;
+  }
+
+  public void setExceptionTargets(List<MethodMapping.HandlerInfo> exceptionTargets) {
+    this.exceptionTargets = exceptionTargets;
   }
 
   public void generateCall() {
+    // Test staticExceptionCorrectness fail by two reasons:
+    // 1. There is no proper class test prior to interceptor call
+    // 2. The signature of the interceptor is incorrect
+    // TODO(vors): Fix instrumentation of static methods.
+
     int beforeListeners = countListenerCalls(beforeTargets);
     int afterListeners = countListenerCalls(afterTargets);
     int listeners = beforeListeners + afterListeners;
@@ -84,7 +95,36 @@ public class InstrumentCalls {
     if (listeners > 0) {
       saver.loadStack();
     }
-    cb.visitMethodInsn();
+
+    int exceptionTargetsCount = countListenerCalls(exceptionTargets);
+    if (exceptionTargetsCount == 0) {
+      // Invoke instrumenting method without interceptor.
+      cb.visitMethodInsn();
+    } else {
+      // We support zero or one exception handler for each class.
+      if (exceptionTargetsCount > 1) {
+        throw new RuntimeException("Too many exceptionTargets to " + cb.getMethodName());
+      }
+
+      MethodMapping.HandlerInfo exceptionInfo = exceptionTargets.get(0);
+
+      Label startExceptionRegion = new Label();
+      Label endExceptionRegion = new Label();
+
+      if (opcode != Opcodes.INVOKESTATIC) {
+        // Store the object in a local variable.
+        saverThis = cb.createObjSaver();
+        gen.dup();
+        saverThis.saveStack();
+      }
+
+      gen.visitLabel(startExceptionRegion);
+      cb.visitMethodInsn();
+      gen.visitLabel(endExceptionRegion);
+
+      genTryCatchBlock(exceptionInfo, startExceptionRegion, endExceptionRegion);
+    }
+
     if (afterListeners > 0) {
       genListenerCalls(afterTargets, true /* saveRet */);
     }
@@ -105,6 +145,50 @@ public class InstrumentCalls {
       }
     }
     return ret;
+  }
+
+  private void genTryCatchBlock(MethodMapping.HandlerInfo target, Label startExceptionRegion,
+                                Label endExceptionRegion) {
+    Label startCatchRegion = new Label();
+    Label labelSkip = new Label();
+    Label labelAfter = new Label();
+
+    boolean isStatic = (opcode == Opcodes.INVOKESTATIC);
+    
+    gen.visitJumpInsn(Opcodes.GOTO, labelAfter);
+
+    gen.visitLabel(startCatchRegion);
+
+    // TODO(vors): Handle static method exceptions incorrectly: we don't check class
+    if (!isStatic) {
+      // Skip the event if 'this' is not a child of the base class.
+      saverThis.loadStack();
+      gen.instanceOf(Type.getObjectType(target.getWatchedClass()));
+      gen.visitJumpInsn(Opcodes.IFEQ, labelSkip);
+    }
+
+    // Restore stack to invoke exception handler.
+    // dup() exception object.
+    gen.dup();
+    if (!isStatic) {
+      saverThis.loadStack();
+      gen.swap();
+    }
+    gen.push(cb.codePosition());
+
+    cb.listenerCall(target.getHandler(),
+        (isStatic ? "(" : ("(L" + target.getWatchedClass()) + ";") + "Ljava/lang/Throwable;J)V");
+
+    gen.visitLabel(labelSkip);
+    // throw exception object to next handler in exception table.
+    gen.throwException();
+
+    gen.visitLabel(labelAfter);
+
+    // Mark try catch region with highest priority to all Exceptions.
+    cb.topVisitTryCatchBlock(startExceptionRegion, endExceptionRegion, startCatchRegion,
+            "java/lang/Throwable");
+
   }
 
   private void genListenerCalls(

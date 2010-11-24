@@ -183,4 +183,32 @@ public class CustomTests {
     };
   }
 
+  static class AwaitProvider {
+    static void await() {
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
+  @ExcludedTest(reason = "Collision in interceptors methods names in static methods" +
+      " falling jtsan in sad. See comment in top of InstrumentCalls.generateCall() method")
+  @RaceTest(expectRace = true,
+      description = "Test exception handle mechanism correctness with static methods.")
+  public void staticExceptionCorrectness() {
+    new ThreadRunner(2) {
+      public void thread1() {
+        AwaitProvider.await();
+        sharedVar++;
+      }
+
+      public void thread2() {
+        shortSleep();
+        thread1();
+      }
+    };
+  }
+
 }

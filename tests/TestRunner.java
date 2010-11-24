@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
  */
 public class TestRunner {
 
-  private final String REGEXP_PREFIX = "test_filter=";
+  private final String REGEXP_PREFIX = "filter=";
   private final String VERBOSE_FLAG = "verbose";
   private final String IGNORE_EXCLUDED_FLAG = "all";
   private final String IGNORE_EXPECTED_RACE_FLAG = "ignore_expected";

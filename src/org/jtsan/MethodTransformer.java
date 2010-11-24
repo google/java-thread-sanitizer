@@ -22,6 +22,8 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.LocalVariablesSorter;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -41,6 +43,37 @@ public class MethodTransformer extends AdviceAdapter {
   private final DescrCallback lazyDescr;
   private final Set<String> volatileFields;
   private final boolean methodIsStatic;
+  private final List<ExceptionTableEntry> exceptionTableTop, exceptionTableBottom;
+
+  private static class ExceptionTableEntry {
+    private final Label start;
+    private final Label end;
+    private final Label target;
+    private final String type;
+        
+    public Label getStart() {
+      return start;
+    }
+
+    public Label getEnd() {
+      return end;
+    }
+
+    public Label getTarget() {
+      return target;
+    }
+
+    public String getType() {
+      return type;
+    }
+
+    ExceptionTableEntry(Label start, Label end, Label target, String type) {
+      this.start = start;
+      this.end = end;
+      this.target = target;
+      this.type = type;
+    }
+  }
 
   private static final int[] storeOpcodes =
     {IASTORE, LASTORE, FASTORE, DASTORE, AASTORE, BASTORE, CASTORE, SASTORE};
@@ -66,6 +99,8 @@ public class MethodTransformer extends AdviceAdapter {
     this.volatileFields = volatileFields;
     this.methodIsStatic = ((acc & Opcodes.ACC_STATIC) != 0);
     lazyDescr = new DescrCallback();
+    exceptionTableTop = new ArrayList<ExceptionTableEntry>();
+    exceptionTableBottom = new ArrayList<ExceptionTableEntry>();
   }
 
   public void setLocalVarsSorter(LocalVariablesSorter lvs) {
@@ -117,6 +152,12 @@ public class MethodTransformer extends AdviceAdapter {
 
   @Override
   public void visitMaxs(int maxStack, int maxLocals) {
+    for (ExceptionTableEntry t : exceptionTableTop) {
+      mv.visitTryCatchBlock(t.getStart(), t.getEnd(), t.getTarget(), t.getType());
+    }
+    for (ExceptionTableEntry t : exceptionTableBottom) {
+      mv.visitTryCatchBlock(t.getStart(), t.getEnd(), t.getTarget(), t.getType());
+    }
     Label endFinally = new Label();
     mv.visitTryCatchBlock(startFinally, endFinally, endFinally, null);
     mv.visitLabel(endFinally);
@@ -175,6 +216,16 @@ public class MethodTransformer extends AdviceAdapter {
       captureMethodExit();
     }
   }
+
+  @Override
+  public void visitTryCatchBlock(Label start, Label end, Label target, String type) {
+    exceptionTableBottom.add(new ExceptionTableEntry(start, end, target, type));
+  }
+
+  private void topVisitTryCatchBlock(Label start, Label end, Label target, String type) {
+    exceptionTableTop.add(new ExceptionTableEntry(start, end, target, type));
+  }
+
 
   class DescrCallback {
     public String getDescr() { return fullName + " " + srcFile + " " + line; }
@@ -341,6 +392,12 @@ public class MethodTransformer extends AdviceAdapter {
       return saver;
     }
 
+    public LocalVarsSaver createObjSaver() {
+      LocalVarsSaver saver = new LocalVarsSaver(mv, localVarsSorter);
+      saver.initFromTypeDesc("Ljava/lang/Object;");
+      return saver;
+    }
+
     public void visitMethodInsn() {
       superVisitMethodInsn(opcode, owner, name, desc);
     }
@@ -351,6 +408,14 @@ public class MethodTransformer extends AdviceAdapter {
 
     public void listenerCall(String meth, String listenerDesc) {
       visitListenerCall(meth, listenerDesc);
+    }
+
+    public void topVisitTryCatchBlock(Label start, Label end, Label target, String type) {
+      MethodTransformer.this.topVisitTryCatchBlock(start, end, target, type);
+    }
+
+    public String getMethodName() {
+      return name;
     }
   }
 
@@ -365,6 +430,7 @@ public class MethodTransformer extends AdviceAdapter {
                             this, opcode, owner, desc);
     callsGen.setBeforeTargets(methods.getTargetsFor(name + desc, MethodMapping.E_BEFORE_METHOD));
     callsGen.setAfterTargets(methods.getTargetsFor(name + desc, MethodMapping.E_AFTER_METHOD));
+    callsGen.setExceptionTargets(methods.getTargetsFor(name + desc, MethodMapping.E_EXCEPTION));
     callsGen.generateCall();
 
     // Capture code position after the call.

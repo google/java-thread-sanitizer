@@ -29,8 +29,10 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.commons.LocalVariablesSorter;
 import org.objectweb.asm.util.TraceClassVisitor;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
@@ -50,6 +52,8 @@ public class Agent implements ClassFileTransformer {
 
   private static final String DEBUG_CLASS_PREFIX = "cls=";
 
+  private static final String SAVE_TRANSFORMED_CLASSES = "stc";
+
   // Option that enables retranslation of system classes.
   private static final String ENABLE_SYS_PREFIX = "sys=";
 
@@ -62,6 +66,9 @@ public class Agent implements ClassFileTransformer {
 
   // Default events file name.
   private static final String DEFAULT_EVENTS_FILE = "jtsan.events";
+
+  //Path to directory where the agent saves transformed class files when flag 'stc' is set.
+  private static final String TRANSFORMED_CLASSES_ROOT = "jtsan_transformed_classes";
 
   // Ignore list to eliminate endless recursion.
   private static String[] ignore = new String[]{
@@ -108,6 +115,8 @@ public class Agent implements ClassFileTransformer {
 
   private String debugClassPrefix;
 
+  private boolean writeTransformedClasses;
+
   public static void premain(String arg, Instrumentation instrumentation) {
     Agent agent = new Agent();
     syncMethods = new MethodMapping();
@@ -144,6 +153,14 @@ public class Agent implements ClassFileTransformer {
             eventWriter = new BinaryEventWriter();
           } else if (writerName.equals(WRITER_TYPE_BINSTRDEBUG)) {
             eventWriter = new BinAndStrEventWriter();
+          }
+        }
+        idx = args[i].lastIndexOf(SAVE_TRANSFORMED_CLASSES);
+        if (idx != -1) {
+          agent.writeTransformedClasses = true;
+          File f = new File(TRANSFORMED_CLASSES_ROOT);
+          if (f.mkdirs()) {
+            System.out.println("Java Agent: create " + TRANSFORMED_CLASSES_ROOT + " directory");
           }
         }
       }
@@ -218,6 +235,14 @@ public class Agent implements ClassFileTransformer {
           printTransformedClass(res);
         }
       }
+
+      if (writeTransformedClasses) {
+        String fileName = TRANSFORMED_CLASSES_ROOT + "/"
+            + className.substring(className.lastIndexOf("/") + 1) + ".class";
+        File f = new File(fileName);
+        printTransformedClassToFile(res, f);
+      }
+      
       return res;
     } catch (CodeSizeLimiter.MethodTooLongException e) {
       System.out.println("Too long method code: " + className + "." + e.getMethodName() +
@@ -288,4 +313,15 @@ public class Agent implements ClassFileTransformer {
         TraceClassVisitor.getDefaultAttributes(),
         0);
   }
+
+  public void printTransformedClassToFile(byte[] b, File f) {
+    try {
+      OutputStream out = new FileOutputStream(f);
+      out.write(b);
+      out.close();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
 }

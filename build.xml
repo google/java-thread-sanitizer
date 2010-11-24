@@ -24,10 +24,10 @@ ant test
 'ant test' supports define-flags: -D{name}={value}
 tsan_path
 agent_args
-test_args
+args
 
 Sample:
-ant test -Dtests_args=test_filter=staticSync:all:ignore_expected
+ant test -Dargs=filter=staticSync:all:ignore_expected
 </echo>
   </target>
 
@@ -53,7 +53,7 @@ ant test -Dtests_args=test_filter=staticSync:all:ignore_expected
       else="logfile=${events-file}">
     <isset property="agent_args"/>
   </condition>
-  <property name="tests_args" value=""/>
+  <property name="args" value=""/>
 
   <target name="compile" depends="EventType.java">
     <mkdir dir="${bin-dir}/agent"/>
@@ -103,12 +103,12 @@ ant test -Dtests_args=test_filter=staticSync:all:ignore_expected
     <mkdir dir="${log-dir}"/>
     <echo>tsan_path = ${tsan_path}</echo>
     <echo>agent_args = ${agent-args}</echo>
-    <echo>tests_args = ${tests_args}</echo>
+    <echo>args = ${args}</echo>
     <echo>running tests under agent</echo>
     <java fork="true" jar="${tests-jar-path}" output="${java-log-file}">
       <jvmarg value="-Xbootclasspath/p:${agent-path}"/>
       <jvmarg value="-javaagent:${agent-path}=${agent-args}"/>
-      <arg value="${tests_args}"/>
+      <arg value="${args}"/>
     </java>
     <echo>running tsan-offline</echo>
     <exec executable="${tsan_path}"
