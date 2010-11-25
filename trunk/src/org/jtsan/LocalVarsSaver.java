@@ -20,7 +20,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.LocalVariablesSorter;
 
-import java.util.Vector;
+import java.util.ArrayList;
 
 /**
  * Generates bytecode instructions to save method parameters according to their type.
@@ -30,8 +30,8 @@ import java.util.Vector;
 public class LocalVarsSaver {
   private final MethodVisitor mv;
   private final LocalVariablesSorter lvs;
-  private Vector<Type> types;
-  private Vector<Integer> vars;
+  private ArrayList<Type> types;
+  private ArrayList<Integer> vars;
   private boolean hasRetValue;
   private Type returnType;
   private int returnVar;
@@ -45,77 +45,43 @@ public class LocalVarsSaver {
     types = parseMethodName(meth);
     vars = newLocalVarsFromTypes(types, lvs);
     if (meth.charAt(meth.length() - 1) != 'V') {
-      returnType = typeByChar(meth.charAt(meth.indexOf(')') + 1));
+      returnType = Type.getType(meth.substring(meth.indexOf(')') + 1));
       returnVar = lvs.newLocal(returnType);
     }
   }
 
   public void initFromTypeDesc(String desc) {
-    char c = desc.charAt(0);
-    types = new Vector<Type>();
-    types.add(typeByChar(c));
+    types = new ArrayList<Type>();
+    types.add(Type.getType(desc));
     vars = newLocalVarsFromTypes(types, lvs);
   }
 
-  private static boolean inParams(int i, String methodName) {
-    return i < methodName.length() && methodName.charAt(i) != ')';
-  }
-
-  private static Vector<Integer> newLocalVarsFromTypes(
-      Vector<Type> types, LocalVariablesSorter lvs) {
-    Vector<Integer> vars = new Vector<Integer>();
+  private static ArrayList<Integer> newLocalVarsFromTypes(
+      ArrayList<Type> types, LocalVariablesSorter lvs) {
+    ArrayList<Integer> vars = new ArrayList<Integer>();
     for (Type type : types) {
       vars.add(lvs.newLocal(type));
     }
     return vars;
   }
 
-  private static Type typeByChar(char ch) {
-    if (ch == 'L' || ch == '[') {
-      return Type.getObjectType("java/lang/Object");
-    }
-    switch (ch) {
-      case 'I':
-        return Type.INT_TYPE;
-      case 'J':
-        return Type.LONG_TYPE;
-      case 'F':
-        return Type.FLOAT_TYPE;
-      case 'D':
-        return Type.DOUBLE_TYPE;
-      case 'B':
-        return Type.BYTE_TYPE;
-      case 'C':
-        return Type.CHAR_TYPE;
-      case 'S':
-        return Type.SHORT_TYPE;
-      case 'Z':
-        return Type.BOOLEAN_TYPE;
-      default:
-        throw new UnsupportedOperationException(
-            "saving/loading type " + ch + " is not supported");
-    }
-  }
-
-  private static Vector<Type> parseMethodName(String meth) {
-    Vector<Type> types = new Vector<Type>();
-    for (int i = meth.indexOf('(') + 1; inParams(i, meth); i++) {
-      char ch = meth.charAt(i);
+  private static ArrayList<Type> parseMethodName(String meth) {
+    ArrayList<Type> types = new ArrayList<Type>();
+    int i = meth.indexOf('(') + 1;
+    int descEnd = meth.indexOf(')');
+    while (i < descEnd) {
       Type type;
-      if (ch != 'L' && ch != '[') {
-        type = typeByChar(ch);
-      } else {
-        StringBuilder sb = new StringBuilder();
-        for (int j = i + 1; inParams(j, meth); j++) {
-          char och = meth.charAt(j);
-          if (och == ';') {
-            i = j;
-            break;
-          }
-          sb.append(och);
-        }
-        type = Type.getObjectType(sb.toString());
+      int l = i;
+      while (meth.charAt(l) == '[') {
+        l++;
       }
+      if (meth.charAt(l) == 'L') {
+        while (meth.charAt(l) != ';') {
+          l++;
+        }
+      }
+      type = Type.getType(meth.substring(i, l+1));
+      i = l+1;
       types.add(type);
     }
     return types;
