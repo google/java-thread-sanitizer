@@ -70,7 +70,6 @@ public class LocalVarsSaver {
     int i = meth.indexOf('(') + 1;
     int descEnd = meth.indexOf(')');
     while (i < descEnd) {
-      Type type;
       int l = i;
       while (meth.charAt(l) == '[') {
         l++;
@@ -80,9 +79,8 @@ public class LocalVarsSaver {
           l++;
         }
       }
-      type = Type.getType(meth.substring(i, l+1));
+      types.add(Type.getType(meth.substring(i, l+1)));
       i = l+1;
-      types.add(type);
     }
     return types;
   }

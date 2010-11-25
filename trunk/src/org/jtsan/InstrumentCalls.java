@@ -78,20 +78,22 @@ public class InstrumentCalls {
 
     int beforeListeners = countListenerCalls(beforeTargets);
     int afterListeners = countListenerCalls(afterTargets);
-    int listeners = beforeListeners + afterListeners;
+    int exceptionListeners = countListenerCalls(exceptionTargets);
+    int listeners = beforeListeners + afterListeners + exceptionListeners;
     if (listeners > 0) {
       saver = cb.createLocalVarsSaver();
       saver.saveStack();
-    }
-    if (opcode != Opcodes.INVOKESTATIC) {
-      // 'Dup' as many times as it would require to make listener calls.
-      for (int i = 0; i < listeners; i++) {
+      if (opcode != Opcodes.INVOKESTATIC) {
+        // Store the object in a local variable.
+        saverThis = cb.createObjSaver();
         gen.dup();
+        saverThis.saveStack();
       }
     }
     if (beforeListeners > 0) {
       genListenerCalls(beforeTargets, false /* saveRet */);
     }
+
     if (listeners > 0) {
       saver.loadStack();
     }
@@ -110,13 +112,6 @@ public class InstrumentCalls {
 
       Label startExceptionRegion = new Label();
       Label endExceptionRegion = new Label();
-
-      if (opcode != Opcodes.INVOKESTATIC) {
-        // Store the object in a local variable.
-        saverThis = cb.createObjSaver();
-        gen.dup();
-        saverThis.saveStack();
-      }
 
       gen.visitLabel(startExceptionRegion);
       cb.visitMethodInsn();
@@ -206,7 +201,9 @@ public class InstrumentCalls {
       boolean exact = target.isExact();
       boolean callGenerated = false;
       boolean listenStatic = (opcode == Opcodes.INVOKESTATIC);
-
+      if (!listenStatic) {
+        saverThis.loadStack();
+      }
       // Shape the listener method's descriptor.
       String tailReplacement = "J)V";
       int idx = desc.indexOf(")");
