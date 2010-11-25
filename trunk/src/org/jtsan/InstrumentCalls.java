@@ -86,8 +86,7 @@ public class InstrumentCalls {
       if (opcode != Opcodes.INVOKESTATIC) {
         // Store the object in a local variable.
         saverThis = cb.createObjSaver();
-        gen.dup();
-        saverThis.saveStack();
+        saverThis.saveAndLoadStack();
       }
     }
     if (beforeListeners > 0) {
