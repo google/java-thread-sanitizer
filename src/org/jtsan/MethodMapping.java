@@ -32,6 +32,10 @@ public class MethodMapping {
   public static final int E_BEFORE_METHOD = 1;
   public static final int E_AFTER_METHOD = 2;
   public static final int E_EXCEPTION = 3;
+  public static final int E_BEFORE_STATIC_METHOD = 4;
+  public static final int E_AFTER_STATIC_METHOD = 5;
+  public static final int E_STATIC_EXCEPTION = 6;
+
 
   private final ConcurrentMap<EventInfo, LinkedList<HandlerInfo>> map =
       new ConcurrentHashMap<EventInfo, LinkedList<HandlerInfo>>(10);
@@ -120,6 +124,14 @@ public class MethodMapping {
     registerEvent(className, methodName, E_BEFORE_METHOD, eventMethod, true /* exact */);
   }
 
+  public void registerBeforeStatic(String className, String methodName, String eventMethod) {
+    registerEvent(className, methodName, E_BEFORE_STATIC_METHOD, eventMethod, false /* exact */);
+  }
+
+  public void registerBeforeStaticExact(String className, String methodName, String eventMethod) {
+    registerEvent(className, methodName, E_BEFORE_STATIC_METHOD, eventMethod, true /* exact */);
+  }
+
   public void registerAfter(String className, String methodName, String eventMethod) {
     registerEvent(className, methodName, E_AFTER_METHOD, eventMethod, false /* exact */);
   }
@@ -128,8 +140,20 @@ public class MethodMapping {
     registerEvent(className, methodName, E_AFTER_METHOD, eventMethod, true /* exact */);
   }
 
+  public void registerAfterStatic(String className, String methodName, String eventMethod) {
+    registerEvent(className, methodName, E_AFTER_STATIC_METHOD, eventMethod, false /* exact */);
+  }
+
+  public void registerAfterStaticExact(String className, String methodName, String eventMethod) {
+    registerEvent(className, methodName, E_AFTER_STATIC_METHOD, eventMethod, true /* exact */);
+  }
+
   public void registerException(String className, String methodName, String eventMethod) {
     registerEvent(className, methodName, E_EXCEPTION, eventMethod, false /* exact */);
+  }
+
+  public void registerExceptionStatic(String className, String methodName, String eventMethod) {
+    registerEvent(className, methodName, E_STATIC_EXCEPTION, eventMethod, false /* exact */);
   }
 
   public List<HandlerInfo> getTargetsFor(String name, int eventType) {
