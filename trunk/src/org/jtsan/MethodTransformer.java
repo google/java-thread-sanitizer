@@ -428,9 +428,13 @@ public class MethodTransformer extends AdviceAdapter {
     InstrumentCalls callsGen =
         new InstrumentCalls(new GenerationCallback(opcode, owner, name, desc),
                             this, opcode, owner, desc);
-    callsGen.setBeforeTargets(methods.getTargetsFor(name + desc, MethodMapping.E_BEFORE_METHOD));
-    callsGen.setAfterTargets(methods.getTargetsFor(name + desc, MethodMapping.E_AFTER_METHOD));
-    callsGen.setExceptionTargets(methods.getTargetsFor(name + desc, MethodMapping.E_EXCEPTION));
+    boolean isStatic = (opcode == Opcodes.INVOKESTATIC);
+    callsGen.setBeforeTargets(methods.getTargetsFor(name + desc,
+        isStatic ? MethodMapping.E_BEFORE_STATIC_METHOD : MethodMapping.E_BEFORE_METHOD));
+    callsGen.setAfterTargets(methods.getTargetsFor(name + desc,
+        isStatic ? MethodMapping.E_AFTER_STATIC_METHOD : MethodMapping.E_AFTER_METHOD));
+    callsGen.setExceptionTargets(methods.getTargetsFor(name + desc,
+        isStatic ? MethodMapping.E_STATIC_EXCEPTION : MethodMapping.E_EXCEPTION));
     callsGen.generateCall();
 
     // Capture code position after the call.

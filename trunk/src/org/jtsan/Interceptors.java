@@ -24,8 +24,9 @@ package org.jtsan;
 public class Interceptors {
 
   static void init(MethodMapping map) {
-    map.registerAfter("java/lang/System", "arraycopy(Ljava/lang/Object;ILjava/lang/Object;II)V",
-                       "jlSystemArrayCopy");
+    map.registerAfterStatic("java/lang/System",
+                            "arraycopy(Ljava/lang/Object;ILjava/lang/Object;II)V",
+                            "jlSystemArrayCopy");
     map.registerBefore("java/lang/Object", "wait()V", "jlObjectWait");
     map.registerBefore("java/lang/Object", "notify()V", "jlObjectNotify");
     map.registerBefore("java/lang/Object", "notifyAll()V", "jlObjectNotifyAll");
@@ -135,32 +136,32 @@ public class Interceptors {
                        "juclCondition_signal");
 
     // java.util.concurrent.locks.LockSupport
-    map.registerAfter("java/util/concurrent/locks/LockSupport", "park()V",
+    map.registerAfterStatic("java/util/concurrent/locks/LockSupport", "park()V",
                       "juclLockSupport_park");
-    map.registerAfter("java/util/concurrent/locks/LockSupport", "park(Ljava/lang/Object;)V",
+    map.registerAfterStatic("java/util/concurrent/locks/LockSupport", "park(Ljava/lang/Object;)V",
                       "juclLockSupport_park2");
-    map.registerAfter("java/util/concurrent/locks/LockSupport", "parkNanos(J)V",
+    map.registerAfterStatic("java/util/concurrent/locks/LockSupport", "parkNanos(J)V",
                       "juclLockSupport_parkNanos");
-    map.registerAfter("java/util/concurrent/locks/LockSupport", "parkNanos(Ljava/lang/Object;J)V",
-                      "juclLockSupport_parkNanos2");
-    map.registerAfter("java/util/concurrent/locks/LockSupport", "parkUntil(J)V",
+    map.registerAfterStatic("java/util/concurrent/locks/LockSupport",
+                            "parkNanos(Ljava/lang/Object;J)V", "juclLockSupport_parkNanos2");
+    map.registerAfterStatic("java/util/concurrent/locks/LockSupport", "parkUntil(J)V",
                       "juclLockSupport_parkUntil");
-    map.registerAfter("java/util/concurrent/locks/LockSupport", "parkUntil(Ljava/lang/Object;J)V",
-                      "juclLockSupport_parkUntil2");
-    map.registerBefore("java/util/concurrent/locks/LockSupport", "unpark(Ljava/lang/Thread;)V",
-                      "juclLockSupport_unpark");
+    map.registerAfterStatic("java/util/concurrent/locks/LockSupport",
+                            "parkUntil(Ljava/lang/Object;J)V", "juclLockSupport_parkUntil2");
+    map.registerBeforeStatic("java/util/concurrent/locks/LockSupport",
+                             "unpark(Ljava/lang/Thread;)V", "juclLockSupport_unpark");
 
     // org.jtsan.RaceDetectorApi. Put exact matching to eliminate the cost of extra checks.
-    map.registerBeforeExact("org/jtsan/RaceDetectorApi",
-                            "noOp(Ljava/lang/Object;)V", "rdaApiNoOp");
-    map.registerBeforeExact("org/jtsan/RaceDetectorApi",
-                            "expectRaceBegin()V", "rdaApiExpectRaceBegin");
-    map.registerBeforeExact("org/jtsan/RaceDetectorApi",
-                            "expectRaceEnd()V", "rdaApiExpectRaceEnd");
-    map.registerBeforeExact("org/jtsan/RaceDetectorApi",
-                            "printStackTrace()V", "rdaApiPrintStackTrace");
-    map.registerBeforeExact("org/jtsan/RaceDetectorApi",
-                            "print(Ljava/lang/String;)V", "rdaApiPrint");
+    map.registerBeforeStaticExact("org/jtsan/RaceDetectorApi",
+                                  "noOp(Ljava/lang/Object;)V", "rdaApiNoOp");
+    map.registerBeforeStaticExact("org/jtsan/RaceDetectorApi",
+                                  "expectRaceBegin()V", "rdaApiExpectRaceBegin");
+    map.registerBeforeStaticExact("org/jtsan/RaceDetectorApi",
+                                  "expectRaceEnd()V", "rdaApiExpectRaceEnd");
+    map.registerBeforeStaticExact("org/jtsan/RaceDetectorApi",
+                                  "printStackTrace()V", "rdaApiPrintStackTrace");
+    map.registerBeforeStaticExact("org/jtsan/RaceDetectorApi",
+                                  "print(Ljava/lang/String;)V", "rdaApiPrint");
 
     // Benign expectRace spots in system classes.
     map.benignRaceField("java/util/concurrent/locks/ReentrantReadWriteLock$Sync",

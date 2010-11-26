@@ -193,11 +193,10 @@ public class CustomTests {
     }
   }
 
-  @ExcludedTest(reason = "Collision in interceptors methods names in static methods" +
-      " falling jtsan in sad. See comment in top of InstrumentCalls.generateCall() method")
   @RaceTest(expectRace = true,
-      description = "Test exception handle mechanism correctness with static methods.")
-  public void staticExceptionCorrectness() {
+      description = "Test that we can instrument static methods with the same name as a " +
+          "non-static method that we intercept.")
+  public void staticCollisions() {
     new ThreadRunner(2) {
       public void thread1() {
         AwaitProvider.await();
