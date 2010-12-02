@@ -97,13 +97,12 @@ public class InstrumentCalls {
       saver.loadStack();
     }
 
-    int exceptionTargetsCount = countListenerCalls(exceptionTargets);
-    if (exceptionTargetsCount == 0) {
+    if (exceptionListeners == 0) {
       // Invoke instrumenting method without interceptor.
       cb.visitMethodInsn();
     } else {
       // We support zero or one exception handler for each class.
-      if (exceptionTargetsCount > 1) {
+      if (exceptionListeners > 1) {
         throw new RuntimeException("Too many exceptionTargets to " + cb.getMethodName());
       }
 
