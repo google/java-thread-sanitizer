@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -573,6 +574,31 @@ public class JUConcurrentTests {
         longSleep();
         synchronized(lock) {
           sharedVar++;
+        }
+      }
+    };
+  }
+
+  @ExcludedTest(reason = "SynchronousQueue is not supported yet")
+  @RaceTest(expectRace = false, description = "Test SynchronousQueue")
+  public void synchronousQueue() {
+    final SynchronousQueue<String> queue = new SynchronousQueue<String>();
+    new ThreadRunner(2) {
+      public void thread1() {
+        try {
+          sharedVar++;
+          queue.put(new String("test"));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      }
+
+      public void thread2() {
+        try {
+          String s = queue.take();
+          sharedVar++;
+        } catch (Exception e) {
+          throw new RuntimeException(e);
         }
       }
     };
