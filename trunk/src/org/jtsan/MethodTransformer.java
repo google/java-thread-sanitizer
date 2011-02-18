@@ -265,16 +265,17 @@ public class MethodTransformer extends AdviceAdapter {
     visitListenerCall("objectFieldAccess", "(Ljava/lang/Object;ZLjava/lang/String;JZ)V");
   }
 
-  private void visitStaticFieldAccess(String fullName, boolean isWrite) {
+  private void visitStaticFieldAccess(String owner, String field, boolean isWrite) {
     // We pass the full name of the field access to the event listener. In presence of many
     // classloaders some distinct fields of non-related classes may appear to have the same name.
     // This may result in some false positives, but very unlikely, since classes from different
     // classloaders barely share stuff.
-    push(fullName);
+    push(owner);
+    push(field);
     push(isWrite);
     push(genCodePosition());
     push(isVolatileField(fullName));
-    visitListenerCall("staticFieldAccess", "(Ljava/lang/String;ZJZ)V");
+    visitListenerCall("staticFieldAccess", "(Ljava/lang/String;Ljava/lang/String;ZJZ)V");
   }
 
   @Override
@@ -306,7 +307,7 @@ public class MethodTransformer extends AdviceAdapter {
       // The method <clinit> may save values to static fields of a class,
       // but JLS guarantees correctness. 
       if (isStatic) {
-        visitStaticFieldAccess(owner + "." + name, isWrite);
+        visitStaticFieldAccess(owner, name, isWrite);
       } else {
         if (!methods.isBenignRaceField(owner, name)) {
           visitObjectFieldAccess(name, desc, isWrite, isVolatileField(owner + "." + name));

@@ -138,15 +138,15 @@ public class EventListener {
   }
 
   public static void staticFieldAccess(
-      String fieldName, boolean isWrite, long pc, boolean isVolatile) {
+      String owner, String field, boolean isWrite, long pc, boolean isVolatile) {
     // Instead of taking 'unique' id of the class, take the id of the string representing it.
     // This is very dirty.
-    // TODO(vors): make uniqueId a 64 bit value: higher half to be class ID, lower
-    // half to be field ID.
+    long uniqueId = ((long)System.identityHashCode(owner.intern()) << 32L) +
+        (long) System.identityHashCode(field.intern());
     reportFieldAccess(isWrite,
                       tid(),
                       pc,
-                      System.identityHashCode(fieldName.intern()),
+                      uniqueId,
                       isVolatile);
   }
 
