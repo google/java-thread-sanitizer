@@ -67,3 +67,4 @@ print disable_str
 print "----"
 print "passed: %d, failed: %d, excluded: %d, total: %d" % \
 (passed, failed, disabled, passed + failed + disabled)
+sys.exit(failed)
