@@ -123,8 +123,9 @@ ant test -Dargs=filter=staticSync:all:ignore_expected
       <arg value="${log-dir}"/>
     </exec>
     <condition property="test-fail.run">
-      <equals arg1="${exitcode}" arg2="1"/>
+      <not> <equals arg1="${exitcode}" arg2="0"/> </not>
     </condition>
+    <fail if="test-fail.run"/>
   </target>
 
   <target name="download" description="download dependences from the internet">
