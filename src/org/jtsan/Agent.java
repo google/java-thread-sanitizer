@@ -67,7 +67,7 @@ public class Agent implements ClassFileTransformer {
   // Default events file name.
   private static final String DEFAULT_EVENTS_FILE = "jtsan.events";
 
-  //Path to directory where the agent saves transformed class files when flag 'stc' is set.
+  // Path to directory where the agent saves transformed class files when flag 'stc' is set.
   private static final String TRANSFORMED_CLASSES_ROOT = "jtsan_transformed_classes";
 
   // Ignore list to eliminate endless recursion.
