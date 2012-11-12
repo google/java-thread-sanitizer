@@ -231,7 +231,7 @@ public class EventListener {
   public static void jlThreadStart(Thread thr, long pc) {
     long parent_tid = tid();
     long child_tid = thr.getId() - 1;
-    writer.writeEvent(EventType.THR_START, child_tid, pc, 0, parent_tid);
+    writer.writeEvent(EventType.THR_START, child_tid, 0, 0, parent_tid);
     writer.writeEvent(EventType.THR_FIRST_INSN, child_tid, pc, 0, 0);
   }
 
